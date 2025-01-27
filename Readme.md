@@ -26,7 +26,7 @@ geodata-app/
 
 1. Clona el repositorio:
     ```sh
-    git clone https://github.com/tu-usuario/geodata-app.git
+    git clone https://github.com/Manuu201/geodata-app.git
     ```
 2. Navega al directorio del proyecto:
     ```sh
