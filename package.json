@@ -29,7 +29,11 @@
     "react-native-vector-icons": "^10.2.0",
     "tamagui": "^1.123.4",
     "typescript": "~5.3.3",
-    "@expo/metro-runtime": "~4.0.1"
+    "@expo/metro-runtime": "~4.0.1",
+    "expo-sharing": "~13.0.1",
+    "expo-print": "~14.0.3",
+    "react-native-webview": "13.12.5",
+    "expo-intent-launcher": "~12.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

@@ -27,6 +27,15 @@ export interface TableEntity {
   data: string[][]; // Matriz para almacenar los datos de la tabla
 }
 
+export interface NoteAttachmentEntity {
+  id: number;
+  note_id: number;
+  type: 'photo' | 'table';
+  attachment_id: number;
+}
+
+
+
 /**
  * Agrega un nuevo item a la lista de tareas.
  */
@@ -157,7 +166,26 @@ export async function updateTableAsync(
   console.log('✅ Tabla actualizada correctamente en la base de datos.');
 }
 
+/**
+ * Agrega una relación entre una nota y un adjunto (foto o tabla).
+ */
+export async function addNoteAttachmentAsync(db: SQLiteDatabase, noteId: number, type: 'photo' | 'table', attachmentId: number): Promise<void> {
+  await db.runAsync('INSERT INTO note_attachments (note_id, type, attachment_id) VALUES (?, ?, ?);', noteId, type, attachmentId);
+}
 
+/**
+ * Obtiene los adjuntos de una nota específica.
+ */
+export async function fetchNoteAttachmentsAsync(db: SQLiteDatabase, noteId: number): Promise<NoteAttachmentEntity[]> {
+  return await db.getAllAsync<NoteAttachmentEntity>('SELECT * FROM note_attachments WHERE note_id = ?;', noteId);
+}
+
+/**
+ * Elimina un adjunto específico de una nota.
+ */
+export async function deleteNoteAttachmentAsync(db: SQLiteDatabase, id: number): Promise<void> {
+  await db.runAsync('DELETE FROM note_attachments WHERE id = ?;', id);
+}
 
 
 /**
@@ -179,6 +207,7 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
       CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY NOT NULL, title TEXT, content TEXT);
       CREATE TABLE IF NOT EXISTS photos (id INTEGER PRIMARY KEY NOT NULL, uri TEXT, latitude REAL, longitude REAL);
       CREATE TABLE IF NOT EXISTS tables (id INTEGER PRIMARY KEY NOT NULL,name TEXT,rows INT,columns INT,data TEXT);
+      CREATE TABLE IF NOT EXISTS note_attachments (id INTEGER PRIMARY KEY NOT NULL,note_id INTEGER,type TEXT CHECK(type IN ('photo', 'table')),attachment_id INTEGER,FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE);
     `);
     currentDbVersion = 1;
   }

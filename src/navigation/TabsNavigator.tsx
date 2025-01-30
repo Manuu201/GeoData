@@ -8,6 +8,7 @@ import HomeScreen from '../components/HomeScreen';
 import SettingsScreen from '../components/SettingsScreen';
 import ProfileScreen from '../components/ProfileScreen';
 import TableEditorScreen from '../components/TableEditorScreen';
+import PdfViewerScreen from '../screens/PdfViewerScreen';
 
 // Crear navegadores
 const Tab = createBottomTabNavigator();
@@ -46,6 +47,7 @@ export default function AppNavigator() {
         <Stack.Navigator id={undefined} screenOptions={{ headerShown: false }}>
           <Stack.Screen name="MainTabs" component={TabNavigator} />
           <Stack.Screen name="TableEditorScreen" component={TableEditorScreen} options={{ title: 'Editar Tabla' }} />
+          <Stack.Screen name="PdfViewerScreen" component={PdfViewerScreen} options={{ title: 'Ver PDF' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>
