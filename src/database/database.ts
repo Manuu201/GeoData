@@ -122,7 +122,7 @@ export async function fetchTablesAsync(db: SQLiteDatabase): Promise<TableEntity[
 
     return {
       ...table,
-      data: parsedData, // Se asegura de devolver una matriz
+      data: parsedData, // Asegurarse de devolver una matriz
     };
   });
 }
@@ -140,9 +140,9 @@ export async function updateTableAsync(
   name: string,
   rows: number,
   columns: number,
-  data: string[][] // ✅ Sigue siendo una matriz
+  data: string[][]
 ): Promise<void> {
-  const dataString = JSON.stringify(data); // 🔥 Convertimos la matriz a JSON
+  const dataString = JSON.stringify(data); // Serializar la matriz
   console.log(`Actualizando tabla ID ${id} con datos:`, { name, rows, columns, dataString });
 
   await db.runAsync(

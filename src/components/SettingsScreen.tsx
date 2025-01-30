@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { View, Button, Image, FlatList, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, FlatList, Alert, StyleSheet, Platform, KeyboardAvoidingView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useSQLiteContext } from 'expo-sqlite';
 import { addPhotoAsync, fetchPhotosAsync, deletePhotoAsync, PhotoEntity } from '../database/database';
 import { Linking } from 'react-native';
+import { Card, FAB, List, Text } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const db = useSQLiteContext();
@@ -15,13 +17,6 @@ export default function SettingsScreen() {
     loadPhotos();
   }, []);
 
-
-// Función para abrir Google Maps con la ubicación
-function openInMaps(latitude: number, longitude: number) {
-    const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
-    Linking.openURL(url);
-  }
-
   /** Cargar las fotos de la base de datos */
   async function loadPhotos() {
     const allPhotos = await fetchPhotosAsync(db);
@@ -30,56 +25,44 @@ function openInMaps(latitude: number, longitude: number) {
 
   /** Tomar una foto y guardar en la base de datos */
   async function takePhoto() {
-    console.log('📷 Intentando tomar una foto...');
-    
-    // Pedir permisos de cámara
     const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
     if (cameraStatus !== 'granted') {
       Alert.alert('Permiso denegado', 'Necesitas permiso para usar la cámara');
       return;
     }
-  
-    // Abrir la cámara
+
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Fix de advertencia
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
     });
-  
+
     if (!result.canceled) {
       const uri = result.assets[0].uri;
-      console.log('✅ Foto tomada:', uri);
-  
-      // 🚨 SOLUCIÓN: Pedir permiso de ubicación antes de obtener la posición
+
       const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
       if (locationStatus !== 'granted') {
         Alert.alert('Permiso denegado', 'Necesitas permitir la ubicación para guardar la foto.');
         return;
       }
-  
-      console.log('⏳ Obteniendo ubicación...');
+
       try {
         const location = await Location.getCurrentPositionAsync({});
-        const latitude = location.coords.latitude;
-        const longitude = location.coords.longitude;
-        console.log('📍 Ubicación obtenida:', latitude, longitude);
-  
-        console.log('📝 Intentando insertar en la base de datos...');
+        const { latitude, longitude } = location.coords;
+
         await addPhotoAsync(db, uri, latitude, longitude);
-        console.log('✅ Foto guardada en la base de datos');
-  
-        loadPhotos(); // Recargar lista
+        loadPhotos();
       } catch (error) {
-        console.error('❌ Error obteniendo ubicación:', error);
         Alert.alert('Error', 'No se pudo obtener la ubicación.');
       }
-    } else {
-      console.log('❌ Captura cancelada');
     }
   }
-  
-  
-  
+
+  /** Abrir Google Maps con la ubicación */
+  function openInMaps(latitude: number, longitude: number) {
+    const url = `geo:${latitude},${longitude}?q=${latitude},${longitude}`;
+    Linking.openURL(url);
+  }
 
   /** Eliminar una foto con confirmación */
   function confirmDeletePhoto(id: number) {
@@ -95,32 +78,46 @@ function openInMaps(latitude: number, longitude: number) {
   }
 
   return (
-    <View style={styles.container}>
-      <Button title="Tomar Foto" onPress={takePhoto} />
-      
-      {selectedPhoto && (
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>📍 Ubicación: {selectedPhoto.latitude}, {selectedPhoto.longitude}</Text>
-        </View>
-      )}
-
-      <FlatList
-        data={photos}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => setSelectedPhoto(item)} onLongPress={() => confirmDeletePhoto(item.id)}>
-            <Image source={{ uri: item.uri }} style={styles.image} />
-          </TouchableOpacity>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+        {selectedPhoto && (
+          <Card style={styles.infoCard}>
+            <Card.Title title="Información de la Foto" />
+            <Card.Content>
+              <List.Item
+                title={`Latitud: ${selectedPhoto.latitude}`}
+                description={`Longitud: ${selectedPhoto.longitude}`}
+                left={() => <List.Icon icon="map-marker" />}
+                onPress={() => openInMaps(selectedPhoto.latitude, selectedPhoto.longitude)}
+              />
+            </Card.Content>
+          </Card>
         )}
-      />
-    </View>
+
+        <FlatList
+          data={photos}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => (
+            <Card style={styles.card} onPress={() => setSelectedPhoto(item)} onLongPress={() => confirmDeletePhoto(item.id)}>
+              <Card.Cover source={{ uri: item.uri }} style={styles.image} />
+            </Card>
+          )}
+        />
+
+        <FAB style={styles.fab} icon="camera" onPress={takePhoto} />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  infoContainer: { marginVertical: 10, padding: 10, backgroundColor: '#ddd', borderRadius: 5 },
-  infoText: { fontSize: 16, textAlign: 'center' },
-  image: { width: 150, height: 150, margin: 5, borderRadius: 10 },
+  safeArea: { flex: 1, backgroundColor: '#f7f7f7' },
+  container: { flex: 1, paddingHorizontal: 10 },
+  list: { paddingBottom: 80 },
+  infoCard: { marginBottom: 10, backgroundColor: '#ffffff' },
+  card: { flex: 1, margin: 5, backgroundColor: '#ffffff' },
+  image: { height: 150, borderRadius: 10 },
+  fab: { position: 'absolute', right: 20, bottom: 20, backgroundColor: '#6200ee' },
 });
