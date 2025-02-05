@@ -5,7 +5,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  FlatList,
 } from "react-native";
 import {
   TextInput,
@@ -13,8 +12,6 @@ import {
   useTheme,
   FAB,
   Portal,
-  Dialog,
-  Button,
   Snackbar,
 } from "react-native-paper";
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native";
@@ -25,8 +22,6 @@ import {
   updateNoteAsync,
   fetchTablesAsync,
   fetchPhotosAsync,
-  addPhotoAsync,
-  addTableAsync,
   PhotoEntity,
   TableEntity,
 } from "../database/database";
@@ -34,6 +29,9 @@ import PhotoComponent from "../screens/PhotoComponent";
 import TableComponent from "../screens/TableComponent";
 import { RootStackParamList } from "../navigation/types";
 import { useSQLiteContext } from "expo-sqlite";
+import InsertOptionsDialog from "../screens/InsertOptionsDialog";
+import ImageSelectionDialog from "../screens/ImageSelectionDialog";
+import TableSelectionDialog from "../screens/TableSelectionDialog";
 
 type RouteProps = RouteProp<RootStackParamList, "NoteEditorScreen">;
 type NavigationProp = StackNavigationProp<RootStackParamList, "NoteEditorScreen">;
@@ -50,17 +48,20 @@ export default function NoteEditorScreen() {
   const [photos, setPhotos] = useState<PhotoEntity[]>(Array.isArray(note.photos) ? note.photos : []);
   const [tables, setTables] = useState<TableEntity[]>(Array.isArray(note.tables) ? note.tables : []);
   const [showOptions, setShowOptions] = useState(false);
+  const [showImageSelection, setShowImageSelection] = useState(false);
+  const [showTableSelection, setShowTableSelection] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [availablePhotos, setAvailablePhotos] = useState<PhotoEntity[]>([]);
+  const [availableTables, setAvailableTables] = useState<TableEntity[]>([]);
 
-  // Solo se carga cuando el usuario interactúa con el dialog, no al montar el componente
   const fetchTables = useCallback(async () => {
     const tables = await fetchTablesAsync(db);
-    setTables(tables);
+    setAvailableTables(tables);
   }, [db]);
 
   const fetchPhotos = useCallback(async () => {
     const photos = await fetchPhotosAsync(db);
-    setPhotos(photos);
+    setAvailablePhotos(photos);
   }, [db]);
 
   const handleDeletePhoto = useCallback(
@@ -88,6 +89,9 @@ export default function NoteEditorScreen() {
 
     setSnackbarVisible(true);
 
+    // Llamamos a `refreshNotes` desde `NotesScreen`
+    navigation.getParent()?.setOptions({ noteUpdated: true });
+
     if (route.params?.onSave) {
       route.params.onSave();
     }
@@ -96,7 +100,7 @@ export default function NoteEditorScreen() {
   const handleInsertTable = useCallback(
     async (table: TableEntity) => {
       setTables((prev) => [...prev, table]);
-      setShowOptions(false);
+      setShowTableSelection(false);
     },
     [setTables],
   );
@@ -104,7 +108,7 @@ export default function NoteEditorScreen() {
   const handleInsertPhoto = useCallback(
     async (photo: PhotoEntity) => {
       setPhotos((prev) => [...prev, photo]);
-      setShowOptions(false);
+      setShowImageSelection(false);
     },
     [setPhotos],
   );
@@ -161,43 +165,39 @@ export default function NoteEditorScreen() {
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         icon="plus"
         onPress={() => {
-          fetchTables(); // Cargar tablas cuando el usuario desea insertar una
-          fetchPhotos(); // Cargar fotos cuando el usuario desea insertar una
+          fetchTables();
+          fetchPhotos();
           setShowOptions(true);
         }}
       />
 
       <Portal>
-        <Dialog visible={showOptions} onDismiss={() => setShowOptions(false)}>
-          <Dialog.Title>Insertar en la nota</Dialog.Title>
-          <Dialog.Content>
-            <FlatList
-              data={[...tables, ...photos]}
-              renderItem={({ item }) => (
-                <Button
-                  mode="outlined"
-                  onPress={() =>
-                    "name" in item
-                      ? handleInsertTable(item as TableEntity)
-                      : handleInsertPhoto(item as PhotoEntity)
-                  }
-                  style={styles.insertButton}
-                  icon={"name" in item ? "table" : "image"}
-                >
-                  {"name" in item ? item.name : `Foto ${item.id}`}
-                </Button>
-              )}
-              keyExtractor={(item) =>
-                "name" in item ? `table-${item.id}` : `photo-${item.id}`
-              }
-              numColumns={2}
-              columnWrapperStyle={styles.insertButton}
-            />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowOptions(false)}>Cerrar</Button>
-          </Dialog.Actions>
-        </Dialog>
+        <InsertOptionsDialog
+          visible={showOptions}
+          onDismiss={() => setShowOptions(false)}
+          onInsertImage={() => {
+            setShowOptions(false);
+            setShowImageSelection(true);
+          }}
+          onInsertTable={() => {
+            setShowOptions(false);
+            setShowTableSelection(true);
+          }}
+        />
+
+        <ImageSelectionDialog
+          visible={showImageSelection}
+          onDismiss={() => setShowImageSelection(false)}
+          photos={availablePhotos}
+          onSelectImage={handleInsertPhoto}
+        />
+
+        <TableSelectionDialog
+          visible={showTableSelection}
+          onDismiss={() => setShowTableSelection(false)}
+          tables={availableTables}
+          onSelectTable={handleInsertTable}
+        />
       </Portal>
       <Snackbar
         visible={snackbarVisible}
@@ -240,9 +240,6 @@ const styles = StyleSheet.create({
     top: 10,
     right: 10,
     zIndex: 1,
-  },
-  insertButton: {
-    margin: 8,
   },
   snackbar: {
     position: "absolute",
