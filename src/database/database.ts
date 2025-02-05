@@ -7,6 +7,8 @@ export interface ItemEntity {
 }
 
 export interface NoteEntity {
+  photos: string;
+  tables: string;
   id: number;
   title: string;
   content: string;
@@ -81,24 +83,32 @@ export async function fetchItemsAsync(db: SQLiteDatabase): Promise<{ todoItems: 
 /**
  * CRUD de Notas
  */
-export async function addNoteAsync(db: SQLiteDatabase, title: string, content: string): Promise<void> {
+export async function addNoteAsync(db: SQLiteDatabase, title: string, content: string, photos: PhotoEntity[] = [], tables: TableEntity[] = []): Promise<void> {
   if (title !== '' && content !== '') {
-    await db.runAsync('INSERT INTO notes (title, content) VALUES (?, ?);', title, content);
+    const photosJson = JSON.stringify(photos);
+    const tablesJson = JSON.stringify(tables);
+    await db.runAsync('INSERT INTO notes (title, content, photos, tables) VALUES (?, ?, ?, ?);', title, content, photosJson, tablesJson);
   }
 }
 
 export async function fetchNotesAsync(db: SQLiteDatabase): Promise<NoteEntity[]> {
-  return await db.getAllAsync<NoteEntity>('SELECT * FROM notes;');
+  const notes = await db.getAllAsync<NoteEntity>('SELECT * FROM notes;');
+  return notes.map(note => ({
+    ...note,
+    photos: note.photos ? JSON.parse(note.photos) : [],
+    tables: note.tables ? JSON.parse(note.tables) : [],
+  }));
 }
 
-export async function updateNoteAsync(db: SQLiteDatabase, id: number, title: string, content: string): Promise<void> {
-  await db.runAsync('UPDATE notes SET title = ?, content = ? WHERE id = ?;', title, content, id);
+export async function updateNoteAsync(db: SQLiteDatabase, id: number, title: string, content: string, photos: PhotoEntity[] = [], tables: TableEntity[] = []): Promise<void> {
+  const photosJson = JSON.stringify(photos);
+  const tablesJson = JSON.stringify(tables);
+  await db.runAsync('UPDATE notes SET title = ?, content = ?, photos = ?, tables = ? WHERE id = ?;', title, content, photosJson, tablesJson, id);
 }
 
 export async function deleteNoteAsync(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM notes WHERE id = ?;', id);
 }
-
 /**
  * CRUD de Fotos
  */
@@ -280,7 +290,7 @@ export async function deleteReportAsync(db: SQLiteDatabase, id: number): Promise
  * Migración de la base de datos.
  */
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  const DATABASE_VERSION = 4;
+  const DATABASE_VERSION = 5; // Incrementamos la versión
   let { user_version: currentDbVersion } = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
 
   if (currentDbVersion >= DATABASE_VERSION) {
@@ -292,27 +302,20 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
   if (currentDbVersion === 0) {
     await db.execAsync(`
       CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY NOT NULL, done INT, value TEXT);
-      CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY NOT NULL, title TEXT, content TEXT);
+      CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY NOT NULL, title TEXT, content TEXT, photos TEXT, tables TEXT);
       CREATE TABLE IF NOT EXISTS photos (id INTEGER PRIMARY KEY NOT NULL, uri TEXT, latitude REAL, longitude REAL);
-      CREATE TABLE IF NOT EXISTS tables (id INTEGER PRIMARY KEY NOT NULL,name TEXT,rows INT,columns INT,data TEXT);
-      CREATE TABLE IF NOT EXISTS note_attachments (id INTEGER PRIMARY KEY NOT NULL,note_id INTEGER,type TEXT CHECK(type IN ('photo', 'table')),attachment_id INTEGER,FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE);
-      CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY NOT NULL,name TEXT,rock_name TEXT,type TEXT,notes TEXT,photo_id INTEGER,table_id INTEGER,FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE SET NULL,FOREIGN KEY (table_id) REFERENCES tables(id) ON DELETE SET NULL
-    );
+      CREATE TABLE IF NOT EXISTS tables (id INTEGER PRIMARY KEY NOT NULL, name TEXT, rows INT, columns INT, data TEXT);
+      CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY NOT NULL, name TEXT, rock_name TEXT, type TEXT, notes TEXT, photo_id INTEGER, table_id INTEGER);
     `);
     currentDbVersion = 1;
   }
 
-  if (currentDbVersion === 3) {
+  if (currentDbVersion === 4) {
     await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS tables (
-        id INTEGER PRIMARY KEY NOT NULL,
-        name TEXT,
-        rows INT,
-        columns INT,
-        data TEXT
-      );
+      ALTER TABLE notes ADD COLUMN photos TEXT;
+      ALTER TABLE notes ADD COLUMN tables TEXT;
     `);
-    currentDbVersion = 4;
+    currentDbVersion = 5;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION};`);

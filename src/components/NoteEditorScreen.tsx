@@ -2,13 +2,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   StyleSheet,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  FlatList,
 } from "react-native";
 import {
-  Text,
   TextInput,
   IconButton,
   useTheme,
@@ -18,23 +17,23 @@ import {
   Button,
   Snackbar,
 } from "react-native-paper";
-import { useSQLiteContext } from "expo-sqlite";
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   addNoteAsync,
   updateNoteAsync,
-  fetchNoteAttachmentsAsync,
-  deleteNoteAttachmentAsync,
   fetchTablesAsync,
   fetchPhotosAsync,
-  addNoteAttachmentAsync,
+  addPhotoAsync,
+  addTableAsync,
+  PhotoEntity,
+  TableEntity,
 } from "../database/database";
-import type { RootStackParamList } from "../navigation/types";
-import type { TableEntity, PhotoEntity } from "../database/database";
 import PhotoComponent from "../screens/PhotoComponent";
 import TableComponent from "../screens/TableComponent";
+import { RootStackParamList } from "../navigation/types";
+import { useSQLiteContext } from "expo-sqlite";
 
 type RouteProps = RouteProp<RootStackParamList, "NoteEditorScreen">;
 type NavigationProp = StackNavigationProp<RootStackParamList, "NoteEditorScreen">;
@@ -45,52 +44,46 @@ export default function NoteEditorScreen() {
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
 
-  const { note = { id: 0, title: "", content: "" } } = route.params || {};
+  const { note = { id: 0, title: "", content: "", photos: [], tables: [] } } = route.params || {};
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
-  const [attachments, setAttachments] = useState<any[]>([]);
-  const [tables, setTables] = useState<TableEntity[]>([]);
-  const [photos, setPhotos] = useState<PhotoEntity[]>([]);
+  const [photos, setPhotos] = useState<PhotoEntity[]>(Array.isArray(note.photos) ? note.photos : []);
+  const [tables, setTables] = useState<TableEntity[]>(Array.isArray(note.tables) ? note.tables : []);
   const [showOptions, setShowOptions] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
 
-  useEffect(() => {
-    const fetchAttachments = async () => {
-      if (note.id > 0) {
-        const noteAttachments = await fetchNoteAttachmentsAsync(db, note.id);
-        setAttachments(noteAttachments);
-      }
-    };
-    fetchAttachments();
-    fetchTables();
-    fetchPhotos();
-  }, [note.id, db]);
-
-  async function fetchTables() {
+  // Solo se carga cuando el usuario interactúa con el dialog, no al montar el componente
+  const fetchTables = useCallback(async () => {
     const tables = await fetchTablesAsync(db);
     setTables(tables);
-  }
+  }, [db]);
 
-  async function fetchPhotos() {
+  const fetchPhotos = useCallback(async () => {
     const photos = await fetchPhotosAsync(db);
     setPhotos(photos);
-  }
+  }, [db]);
 
-  const handleDeleteAttachment = useCallback(
-    async (attachmentId: number) => {
-      await deleteNoteAttachmentAsync(db, attachmentId);
-      setAttachments((prev) => prev.filter((att) => att.id !== attachmentId));
+  const handleDeletePhoto = useCallback(
+    async (photoId: number) => {
+      setPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
     },
-    [db, setAttachments],
+    [setPhotos],
+  );
+
+  const handleDeleteTable = useCallback(
+    async (tableId: number) => {
+      setTables((prev) => prev.filter((table) => table.id !== tableId));
+    },
+    [setTables],
   );
 
   async function handleSaveNote() {
     if (title.trim() === "" || content.trim() === "") return;
 
     if (note.id > 0) {
-      await updateNoteAsync(db, note.id, title, content);
+      await updateNoteAsync(db, note.id, title, content, photos, tables);
     } else {
-      await addNoteAsync(db, title, content);
+      await addNoteAsync(db, title, content, photos, tables);
     }
 
     setSnackbarVisible(true);
@@ -102,52 +95,32 @@ export default function NoteEditorScreen() {
 
   const handleInsertTable = useCallback(
     async (table: TableEntity) => {
-      await addNoteAttachmentAsync(db, note.id, 'table', table.id);
-      setAttachments((prev) => [...prev, { id: table.id, type: 'table', table, key: `table-${table.id}` }]);
+      setTables((prev) => [...prev, table]);
       setShowOptions(false);
     },
-    [db, note.id],
+    [setTables],
   );
 
   const handleInsertPhoto = useCallback(
     async (photo: PhotoEntity) => {
-      await addNoteAttachmentAsync(db, note.id, 'photo', photo.id);
-      setAttachments((prev) => [...prev, { id: photo.id, type: 'photo', photo, key: `photo-${photo.id}` }]);
+      setPhotos((prev) => [...prev, photo]);
       setShowOptions(false);
     },
-    [db, note.id],
+    [setPhotos],
   );
 
-  const renderAttachment = useCallback(
-    ({ item }: { item: any }) => {
-      if (item.type === "photo") {
-        return (
-          <PhotoComponent photo={item.photo} onDelete={() => handleDeleteAttachment(item.id)} />
-        );
-      } else if (item.type === "table") {
-        return (
-          <TableComponent table={item.table} onDelete={() => handleDeleteAttachment(item.id)} />
-        );
-      }
-      return null;
-    },
-    [handleDeleteAttachment],
-  );
-
-  const renderItem = useCallback(
-    ({ item }: { item: TableEntity | PhotoEntity }) => (
-      <Button
-        mode="outlined"
-        onPress={() =>
-          "name" in item ? handleInsertTable(item as TableEntity) : handleInsertPhoto(item as PhotoEntity)
-        }
-        style={styles.insertButton}
-        icon={"name" in item ? "table" : "image"}
-      >
-        {"name" in item ? item.name : `Foto ${item.id}`}
-      </Button>
+  const renderPhoto = useCallback(
+    (photo: PhotoEntity) => (
+      <PhotoComponent photo={photo} onDelete={() => handleDeletePhoto(photo.id)} />
     ),
-    [handleInsertTable, handleInsertPhoto],
+    [handleDeletePhoto],
+  );
+
+  const renderTable = useCallback(
+    (table: TableEntity) => (
+      <TableComponent table={table} onDelete={() => handleDeleteTable(table.id)} />
+    ),
+    [handleDeleteTable],
   );
 
   return (
@@ -170,9 +143,14 @@ export default function NoteEditorScreen() {
             multiline
           />
           <View style={styles.attachmentsContainer}>
-            {attachments.map((item) => (
-              <View key={`${item.type}-${item.id}`}>
-                {renderAttachment({ item })}
+            {photos.map((photo) => (
+              <View key={`photo-${photo.id}`}>
+                {renderPhoto(photo)}
+              </View>
+            ))}
+            {tables.map((table) => (
+              <View key={`table-${table.id}`}>
+                {renderTable(table)}
               </View>
             ))}
           </View>
@@ -182,7 +160,11 @@ export default function NoteEditorScreen() {
       <FAB
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         icon="plus"
-        onPress={() => setShowOptions(true)}
+        onPress={() => {
+          fetchTables(); // Cargar tablas cuando el usuario desea insertar una
+          fetchPhotos(); // Cargar fotos cuando el usuario desea insertar una
+          setShowOptions(true);
+        }}
       />
 
       <Portal>
@@ -191,10 +173,25 @@ export default function NoteEditorScreen() {
           <Dialog.Content>
             <FlatList
               data={[...tables, ...photos]}
-              renderItem={renderItem}
-              keyExtractor={(item) => ("name" in item ? `table-${item.id}` : `photo-${item.id}`)}
+              renderItem={({ item }) => (
+                <Button
+                  mode="outlined"
+                  onPress={() =>
+                    "name" in item
+                      ? handleInsertTable(item as TableEntity)
+                      : handleInsertPhoto(item as PhotoEntity)
+                  }
+                  style={styles.insertButton}
+                  icon={"name" in item ? "table" : "image"}
+                >
+                  {"name" in item ? item.name : `Foto ${item.id}`}
+                </Button>
+              )}
+              keyExtractor={(item) =>
+                "name" in item ? `table-${item.id}` : `photo-${item.id}`
+              }
               numColumns={2}
-              columnWrapperStyle={styles.insertButtonsRow}
+              columnWrapperStyle={styles.insertButton}
             />
           </Dialog.Content>
           <Dialog.Actions>
@@ -238,18 +235,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  insertButton: {
-    flex: 1,
-    margin: 4,
-  },
-  insertButtonsRow: {
-    justifyContent: "space-between",
-  },
   saveButton: {
     position: "absolute",
     top: 10,
     right: 10,
     zIndex: 1,
+  },
+  insertButton: {
+    margin: 8,
   },
   snackbar: {
     position: "absolute",
