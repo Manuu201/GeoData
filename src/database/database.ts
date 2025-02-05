@@ -35,6 +35,16 @@ export interface NoteAttachmentEntity {
 }
 
 
+export interface ReportEntity {
+  id: number;
+  name: string;
+  rock_name: string;
+  type: string;
+  notes: string;
+  photo_id?: number; // Relación con fotos
+  table_id?: number; // Relación con tablas
+}
+
 
 /**
  * Agrega un nuevo item a la lista de tareas.
@@ -110,16 +120,18 @@ export async function deletePhotoAsync(db: SQLiteDatabase, id: number): Promise<
 export async function addTableAsync(db: SQLiteDatabase, name: string, rows: number, columns: number, data: string[][]): Promise<void> {
   if (name !== '' && rows > 0 && columns > 0) {
     const dataString = JSON.stringify(data);
+    console.log('📌 Insertando tabla con datos:', { name, rows, columns, dataString }); // Log para verificar que los datos se están pasando correctamente.
     await db.runAsync('INSERT INTO tables (name, rows, columns, data) VALUES (?, ?, ?, ?);', name, rows, columns, dataString);
   }
 }
+
 
 export async function fetchTablesAsync(db: SQLiteDatabase): Promise<TableEntity[]> {
   const tables = await db.getAllAsync<{ id: number; name: string; rows: number; columns: number; data: string }>(
     'SELECT * FROM tables;'
   );
 
-  console.log('📌 Tablas cargadas desde la base de datos:', tables);
+  console.log('📌 Tablas cargadas desde la base de datos:', tables); // Log para verificar que las tablas se cargan correctamente.
 
   return tables.map(table => {
     let parsedData: string[][] = [[]];
@@ -131,10 +143,11 @@ export async function fetchTablesAsync(db: SQLiteDatabase): Promise<TableEntity[
 
     return {
       ...table,
-      data: parsedData, // Asegurarse de devolver una matriz
+      data: parsedData,
     };
   });
 }
+
 
 
 
@@ -166,13 +179,19 @@ export async function updateTableAsync(
   console.log('✅ Tabla actualizada correctamente en la base de datos.');
 }
 
-/**
- * Agrega una relación entre una nota y un adjunto (foto o tabla).
- */
-export async function addNoteAttachmentAsync(db: SQLiteDatabase, noteId: number, type: 'photo' | 'table', attachmentId: number): Promise<void> {
-  await db.runAsync('INSERT INTO note_attachments (note_id, type, attachment_id) VALUES (?, ?, ?);', noteId, type, attachmentId);
+export async function addNoteAttachmentAsync(
+  db: SQLiteDatabase,
+  noteId: number,
+  type: 'photo' | 'table',
+  attachmentId: number
+): Promise<void> {
+  await db.runAsync(
+    'INSERT INTO note_attachments (note_id, type, attachment_id) VALUES (?, ?, ?);',
+    noteId,
+    type,
+    attachmentId
+  );
 }
-
 /**
  * Obtiene los adjuntos de una nota específica.
  */
@@ -185,6 +204,75 @@ export async function fetchNoteAttachmentsAsync(db: SQLiteDatabase, noteId: numb
  */
 export async function deleteNoteAttachmentAsync(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM note_attachments WHERE id = ?;', id);
+}
+
+
+/**
+ * Agrega un nuevo informe a la base de datos.
+ */
+export async function addReportAsync(
+  db: SQLiteDatabase,
+  name: string,
+  rock_name: string,
+  type: string,
+  notes: string,
+  photo_id?: number,
+  table_id?: number
+): Promise<void> {
+  await db.runAsync(
+    'INSERT INTO reports (name, rock_name, type, notes, photo_id, table_id) VALUES (?, ?, ?, ?, ?, ?);',
+    name,
+    rock_name,
+    type,
+    notes,
+    photo_id || null,
+    table_id || null
+  );
+}
+
+/**
+ * Obtiene todos los informes de la base de datos.
+ */
+export async function fetchReportsAsync(db: SQLiteDatabase): Promise<ReportEntity[]> {
+  return await db.getAllAsync<ReportEntity>(`
+    SELECT r.*, p.uri AS photo_uri, t.name AS table_name 
+    FROM reports r
+    LEFT JOIN photos p ON r.photo_id = p.id
+    LEFT JOIN tables t ON r.table_id = t.id
+    ORDER BY r.id DESC;
+  `);
+}
+
+/**
+ * Actualiza un informe en la base de datos.
+ */
+export async function updateReportAsync(
+  db: SQLiteDatabase,
+  id: number,
+  name: string,
+  rock_name: string,
+  type: string,
+  notes: string,
+  photo_id?: number,
+  table_id?: number
+): Promise<void> {
+  await db.runAsync(
+    'UPDATE reports SET name = ?, rock_name = ?, type = ?, notes = ?, photo_id = ?, table_id = ? WHERE id = ?;',
+    name,
+    rock_name,
+    type,
+    notes,
+    photo_id || null,
+    table_id || null,
+    id
+  );
+}
+
+/**
+ * Elimina un informe de la base de datos.
+ */
+export async function deleteReportAsync(db: SQLiteDatabase, id: number): Promise<void> {
+  await db.runAsync('DELETE FROM reports WHERE id = ?;', id);
 }
 
 
@@ -208,6 +296,8 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
       CREATE TABLE IF NOT EXISTS photos (id INTEGER PRIMARY KEY NOT NULL, uri TEXT, latitude REAL, longitude REAL);
       CREATE TABLE IF NOT EXISTS tables (id INTEGER PRIMARY KEY NOT NULL,name TEXT,rows INT,columns INT,data TEXT);
       CREATE TABLE IF NOT EXISTS note_attachments (id INTEGER PRIMARY KEY NOT NULL,note_id INTEGER,type TEXT CHECK(type IN ('photo', 'table')),attachment_id INTEGER,FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE);
+      CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY NOT NULL,name TEXT,rock_name TEXT,type TEXT,notes TEXT,photo_id INTEGER,table_id INTEGER,FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE SET NULL,FOREIGN KEY (table_id) REFERENCES tables(id) ON DELETE SET NULL
+    );
     `);
     currentDbVersion = 1;
   }

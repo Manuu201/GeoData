@@ -1,4 +1,4 @@
-import type { NoteEntity } from "../database/database"
+import type { NoteEntity, ReportEntity } from "../database/database"
 
 export type RootStackParamList = {
   ProfileScreen: undefined
@@ -9,5 +9,10 @@ export type RootStackParamList = {
     refreshNotes: () => Promise<void>
     onSave?: () => void
   }
+  ReportsScreen: undefined
+  ReportEditorScreen: {
+    report?: ReportEntity
+    refreshReports: () => Promise<void>
+    onSave?: () => void
+  }
 }
-
