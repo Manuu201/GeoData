@@ -4,7 +4,7 @@ import { migrateDbIfNeeded } from './src/database/database';
 
 export default function App() {
   return (
-    <SQLiteProvider databaseName="data1.db" onInit={migrateDbIfNeeded}>
+    <SQLiteProvider databaseName="data4.db" onInit={migrateDbIfNeeded}>
       <TabsNavigator />
     </SQLiteProvider>
   );

@@ -19,6 +19,7 @@ export interface PhotoEntity {
   uri: string;
   latitude: number;
   longitude: number;
+  created_at: string; // Nuevo campo de fecha
 }
 
 export interface TableEntity {
@@ -26,7 +27,8 @@ export interface TableEntity {
   name: string;
   rows: number;
   columns: number;
-  data: string[][]; // Matriz para almacenar los datos de la tabla
+  data: string[][]; 
+  created_at: string; // Nuevo campo de fecha
 }
 
 export interface NoteAttachmentEntity {
@@ -112,8 +114,10 @@ export async function deleteNoteAsync(db: SQLiteDatabase, id: number): Promise<v
 /**
  * CRUD de Fotos
  */
+
 export async function addPhotoAsync(db: SQLiteDatabase, uri: string, latitude: number, longitude: number): Promise<void> {
-  await db.runAsync('INSERT INTO photos (uri, latitude, longitude) VALUES (?, ?, ?);', uri, latitude, longitude);
+  const createdAt = new Date().toISOString();
+  await db.runAsync('INSERT INTO photos (uri, latitude, longitude, created_at) VALUES (?, ?, ?, ?);', uri, latitude, longitude, createdAt);
 }
 
 export async function fetchPhotosAsync(db: SQLiteDatabase): Promise<PhotoEntity[]> {
@@ -123,30 +127,62 @@ export async function fetchPhotosAsync(db: SQLiteDatabase): Promise<PhotoEntity[
 export async function deletePhotoAsync(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM photos WHERE id = ?;', id);
 }
+export async function fetchPhotosByDateAsync(db: SQLiteDatabase, filter: 'day' | 'month' | 'year'): Promise<PhotoEntity[]> {
+  let query = 'SELECT * FROM photos WHERE 1=1';
+
+  if (filter === 'day') {
+    query += ' AND DATE(created_at) = DATE("now")';
+  } else if (filter === 'month') {
+    query += ' AND strftime("%Y-%m", created_at) = strftime("%Y-%m", "now")';
+  } else if (filter === 'year') {
+    query += ' AND strftime("%Y", created_at) = strftime("%Y", "now")';
+  }
+
+  return await db.getAllAsync<PhotoEntity>(query);
+}
+
 
 /**
  * CRUD de Tablas
  */
-export async function addTableAsync(db: SQLiteDatabase, name: string, rows: number, columns: number, data: string[][]): Promise<void> {
-  if (name !== '' && rows > 0 && columns > 0) {
-    const dataString = JSON.stringify(data);
-    console.log('📌 Insertando tabla con datos:', { name, rows, columns, dataString }); // Log para verificar que los datos se están pasando correctamente.
-    await db.runAsync('INSERT INTO tables (name, rows, columns, data) VALUES (?, ?, ?, ?);', name, rows, columns, dataString);
-  }
+/** 
+ * CRUD de Tablas
+ */
+export async function addTableAsync(
+  db: SQLiteDatabase, 
+  name: string, 
+  rows: number, 
+  columns: number, 
+  data?: string[][]
+): Promise<void> {
+  // Se crea una matriz vacía si no hay datos
+  const validatedData = data || Array.from({ length: rows }, () => Array(columns).fill(""));
+  const dataString = JSON.stringify(validatedData);
+  const createdAt = new Date().toISOString();
+
+  await db.runAsync(
+    'INSERT INTO tables (name, rows, columns, data, created_at) VALUES (?, ?, ?, ?, ?);',
+    name, rows, columns, dataString, createdAt
+  );
 }
 
-
 export async function fetchTablesAsync(db: SQLiteDatabase): Promise<TableEntity[]> {
-  const tables = await db.getAllAsync<{ id: number; name: string; rows: number; columns: number; data: string }>(
-    'SELECT * FROM tables;'
-  );
+  const tables = await db.getAllAsync<{
+    id: number;
+    name: string;
+    rows: number;
+    columns: number;
+    data: string;
+    created_at: string;
+  }>('SELECT id, name, rows, columns, data, created_at FROM tables;');
 
-  console.log('📌 Tablas cargadas desde la base de datos:', tables); // Log para verificar que las tablas se cargan correctamente.
+  console.log('📌 Tablas cargadas desde la base de datos:', tables);
 
   return tables.map(table => {
-    let parsedData: string[][] = [[]];
+    let parsedData: string[][] = Array.from({ length: table.rows }, () => Array(table.columns).fill(""));
+
     try {
-      parsedData = JSON.parse(table.data) as string[][];
+      parsedData = table.data ? JSON.parse(table.data) as string[][] : parsedData;
     } catch (error) {
       console.error("🚨 Error al parsear los datos de la tabla:", error);
     }
@@ -158,14 +194,6 @@ export async function fetchTablesAsync(db: SQLiteDatabase): Promise<TableEntity[
   });
 }
 
-
-
-
-
-export async function deleteTableAsync(db: SQLiteDatabase, id: number): Promise<void> {
-  await db.runAsync('DELETE FROM tables WHERE id = ?;', id);
-}
-
 export async function updateTableAsync(
   db: SQLiteDatabase,
   id: number,
@@ -174,19 +202,25 @@ export async function updateTableAsync(
   columns: number,
   data: string[][]
 ): Promise<void> {
-  const dataString = JSON.stringify(data); // Serializar la matriz
-  console.log(`Actualizando tabla ID ${id} con datos:`, { name, rows, columns, dataString });
+  console.log(`Actualizando tabla ID ${id} con datos:`, { name, rows, columns, data });
+
+  // Asegurar que los datos coincidan con la nueva estructura de filas y columnas
+  let normalizedData = Array.from({ length: rows }, (_, rowIndex) =>
+    Array.from({ length: columns }, (_, colIndex) => data[rowIndex]?.[colIndex] ?? "")
+  );
+
+  const dataString = JSON.stringify(normalizedData);
 
   await db.runAsync(
     'UPDATE tables SET name = ?, rows = ?, columns = ?, data = ? WHERE id = ?;',
-    name,
-    rows,
-    columns,
-    dataString,
-    id
+    name, rows, columns, dataString, id
   );
 
   console.log('✅ Tabla actualizada correctamente en la base de datos.');
+}
+
+export async function deleteTableAsync(db: SQLiteDatabase, id: number): Promise<void> {
+  await db.runAsync('DELETE FROM tables WHERE id = ?;', id);
 }
 
 export async function addNoteAttachmentAsync(
@@ -289,8 +323,11 @@ export async function deleteReportAsync(db: SQLiteDatabase, id: number): Promise
 /**
  * Migración de la base de datos.
  */
+ /**
+ * Migración de la base de datos.
+ */
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  const DATABASE_VERSION = 5; // Incrementamos la versión
+  const DATABASE_VERSION = 6; // Nueva versión incrementada
   let { user_version: currentDbVersion } = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
 
   if (currentDbVersion >= DATABASE_VERSION) {
@@ -301,21 +338,61 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
 
   if (currentDbVersion === 0) {
     await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY NOT NULL, done INT, value TEXT);
-      CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY NOT NULL, title TEXT, content TEXT, photos TEXT, tables TEXT);
-      CREATE TABLE IF NOT EXISTS photos (id INTEGER PRIMARY KEY NOT NULL, uri TEXT, latitude REAL, longitude REAL);
-      CREATE TABLE IF NOT EXISTS tables (id INTEGER PRIMARY KEY NOT NULL, name TEXT, rows INT, columns INT, data TEXT);
-      CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY NOT NULL, name TEXT, rock_name TEXT, type TEXT, notes TEXT, photo_id INTEGER, table_id INTEGER);
+      CREATE TABLE IF NOT EXISTS items (
+        id INTEGER PRIMARY KEY NOT NULL,
+        done INT,
+        value TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS notes (
+        id INTEGER PRIMARY KEY NOT NULL,
+        title TEXT,
+        content TEXT,
+        photos TEXT DEFAULT '[]',
+        tables TEXT DEFAULT '[]',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS photos (
+        id INTEGER PRIMARY KEY NOT NULL,
+        uri TEXT,
+        latitude REAL,
+        longitude REAL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS tables (
+        id INTEGER PRIMARY KEY NOT NULL,
+        name TEXT,
+        rows INT,
+        columns INT,
+        data TEXT DEFAULT '[]',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS reports (
+        id INTEGER PRIMARY KEY NOT NULL,
+        name TEXT,
+        rock_name TEXT,
+        type TEXT,
+        notes TEXT,
+        photo_id INTEGER,
+        table_id INTEGER,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      );
     `);
-    currentDbVersion = 1;
+    currentDbVersion = 6;
   }
 
-  if (currentDbVersion === 4) {
+  if (currentDbVersion === 5) {
     await db.execAsync(`
       ALTER TABLE notes ADD COLUMN photos TEXT;
       ALTER TABLE notes ADD COLUMN tables TEXT;
+      ALTER TABLE notes ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP;
+      ALTER TABLE photos ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP;
+      ALTER TABLE tables ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP;
     `);
-    currentDbVersion = 5;
+    currentDbVersion = 6;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION};`);

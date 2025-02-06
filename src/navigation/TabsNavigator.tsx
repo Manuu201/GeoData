@@ -12,6 +12,7 @@ import PdfViewerScreen from "../screens/PdfViewerScreen"
 import NoteEditorScreen from "../components/NoteEditorScreen"
 import ReportEditorScreen from "../components/ReportsEditorScreen"
 import ReportsScreen from "../components/ReportsScreen"
+import OfflineMapScreen from "../screens/OfflineMapScreen"
 
 const Tab = createBottomTabNavigator()
 const Stack = createStackNavigator()
@@ -89,6 +90,7 @@ export default function AppNavigator() {
           <Stack.Screen name="PdfViewerScreen" component={PdfViewerScreen} options={{ title: "Ver PDF" }} />
           <Stack.Screen name="NoteEditorScreen" component={NoteEditorScreen} options={{ title: "Editar Nota" }} />
           <Stack.Screen name="ReportEditorScreen" component={ReportEditorScreen} options={{ title: "Editar Informe" }} />
+          <Stack.Screen name="OfflineMapScreen" component={OfflineMapScreen} options={{ title: "Ver Mapa" }} />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>

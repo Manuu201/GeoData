@@ -18,10 +18,20 @@ export default function InsertOptionsDialog({
     <Dialog visible={visible} onDismiss={onDismiss}>
       <Dialog.Title>Insertar en la nota</Dialog.Title>
       <Dialog.Content>
-        <Button mode="outlined" onPress={onInsertImage} style={{ margin: 8 }} icon="image">
+        <Button
+          mode="outlined"
+          onPress={onInsertImage}
+          style={{ margin: 8 }}
+          icon="image"
+        >
           Agregar Imagen
         </Button>
-        <Button mode="outlined" onPress={onInsertTable} style={{ margin: 8 }} icon="table">
+        <Button
+          mode="outlined"
+          onPress={onInsertTable}
+          style={{ margin: 8 }}
+          icon="table"
+        >
           Agregar Tabla
         </Button>
       </Dialog.Content>

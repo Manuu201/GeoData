@@ -1,18 +1,23 @@
-import type { NoteEntity, ReportEntity } from "../database/database"
+import type { NoteEntity, ReportEntity, TableEntity } from "../database/database";
 
 export type RootStackParamList = {
-  ProfileScreen: undefined
-  PdfViewerScreen: { pdfUri: string }
-  NotesScreen: undefined
+  MainTabs: undefined;
+  PdfViewerScreen: { pdfUri: string };
+  NotesScreen: undefined;
   NoteEditorScreen: {
-    note?: NoteEntity
-    refreshNotes: () => Promise<void>
-    onSave?: () => void
-  }
-  ReportsScreen: undefined
+    note?: NoteEntity;
+    refreshNotes: () => Promise<void>;
+    onSave?: () => void;
+  };
+  ReportsScreen: undefined;
   ReportEditorScreen: {
-    report?: ReportEntity
-    refreshReports: () => Promise<void>
-    onSave?: () => void
-  }
-}
+    report?: ReportEntity;
+    refreshReports: () => Promise<void>;
+    onSave?: () => void;
+  };
+  TableEditorScreen: {
+    table: TableEntity;
+    onSave?: () => void;
+  };
+  OfflineMapScreen: undefined;
+};

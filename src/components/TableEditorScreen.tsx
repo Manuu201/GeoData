@@ -1,70 +1,143 @@
-import { useState, useEffect } from "react"
-import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Alert } from "react-native"
-import { useSQLiteContext } from "expo-sqlite"
-import { updateTableAsync } from "../database/database"
-import { useNavigation, useRoute } from "@react-navigation/native"
-import { SafeAreaView } from "react-native-safe-area-context"
-import { Text, TextInput, Card, Snackbar, FAB, IconButton, useTheme, Button } from "react-native-paper"
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"
+import { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  BackHandler,
+} from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
+import { updateTableAsync } from "../database/database";
+import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Text,
+  TextInput,
+  Card,
+  Snackbar,
+  FAB,
+  IconButton,
+  useTheme,
+  Button,
+} from "react-native-paper";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 export default function TableEditorScreen() {
-  const db = useSQLiteContext()
-  const navigation = useNavigation()
-  const route = useRoute()
-  const { table, onSave } = route.params as {
-    table: { id: number; name: string; data: string[][] }
-    onSave?: () => void
-  }
-  const theme = useTheme()
+  const db = useSQLiteContext();
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { table } = route.params as { table: { id: number; name: string; data: string[][] } };
+  const theme = useTheme();
 
-  const [name, setName] = useState(table.name)
-  const [data, setData] = useState<string[][]>(table.data)
-  const [snackbarVisible, setSnackbarVisible] = useState(false)
+  const [name, setName] = useState(table.name);
+  const [data, setData] = useState<string[][]>(table.data);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [isModified, setIsModified] = useState(false); // Detecta cambios
 
   useEffect(() => {
-    console.log("✏ Cargando datos de la tabla:", table)
-  }, [table]) // Added table to dependencies
+    console.log("✏ Cargando datos de la tabla:", table);
+  }, [table]);
+
+  // Manejo del botón de retroceso en Android
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        if (isModified) {
+          Alert.alert(
+            "Cambios no guardados",
+            "Tienes cambios sin guardar. ¿Quieres salir sin guardar?",
+            [
+              { text: "Cancelar", style: "cancel" },
+              { text: "Salir", onPress: () => navigation.goBack(), style: "destructive" },
+            ]
+          );
+          return true;
+        }
+        return false;
+      };
+
+      BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () => BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+    }, [isModified])
+  );
 
   const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
     setData((prevData) => {
-      const newData = prevData.map((row) => [...row])
-      newData[rowIndex][colIndex] = value
-      return newData
-    })
-  }
+      const newData = prevData.map((row) => [...row]);
+      newData[rowIndex][colIndex] = value;
+      return newData;
+    });
+    setIsModified(true);
+  };
 
   async function handleSave() {
-    console.log("📌 Guardando cambios en la tabla:", { name, data })
-    await updateTableAsync(db, table.id, name, data.length, data[0]?.length || 0, data)
+    console.log("📌 Guardando cambios en la tabla:", { name, data });
+    await updateTableAsync(db, table.id, name, data.length, data[0]?.length || 0, data);
 
-    if (onSave) onSave()
-    setSnackbarVisible(true)
-    setTimeout(() => navigation.goBack(), 1500)
+    setSnackbarVisible(true);
+    setIsModified(false);
+    setTimeout(() => navigation.goBack(), 1500);
   }
+
+  // Preguntar al usuario si quiere salir sin guardar
+  const handleGoBack = () => {
+    if (isModified) {
+      Alert.alert(
+        "Cambios no guardados",
+        "Tienes cambios sin guardar. ¿Quieres salir sin guardar?",
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Salir", onPress: () => navigation.goBack(), style: "destructive" },
+        ]
+      );
+    } else {
+      navigation.goBack();
+    }
+  };
 
   const addRow = () => {
-    setData((prevData) => [...prevData, new Array(prevData[0].length).fill("")])
-  }
+    setData((prevData) => [...prevData, new Array(prevData[0].length).fill("")]);
+    setIsModified(true);
+  };
 
   const addColumn = () => {
-    setData((prevData) => prevData.map((row) => [...row, ""]))
-  }
+    setData((prevData) => prevData.map((row) => [...row, ""]));
+    setIsModified(true);
+  };
+
+  const confirmRemoveRow = (index: number) => {
+    Alert.alert("Eliminar Fila", "¿Estás seguro de que deseas eliminar esta fila?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Eliminar", onPress: () => removeRow(index), style: "destructive" },
+    ]);
+  };
+
+  const confirmRemoveColumn = (index: number) => {
+    Alert.alert("Eliminar Columna", "¿Estás seguro de que deseas eliminar esta columna?", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Eliminar", onPress: () => removeColumn(index), style: "destructive" },
+    ]);
+  };
 
   const removeRow = (index: number) => {
     if (data.length > 1) {
-      setData((prevData) => prevData.filter((_, i) => i !== index))
+      setData((prevData) => prevData.filter((_, i) => i !== index));
+      setIsModified(true);
     } else {
-      Alert.alert("Error", "No se puede eliminar la última fila.")
+      Alert.alert("Error", "No se puede eliminar la última fila.");
     }
-  }
+  };
 
   const removeColumn = (index: number) => {
     if (data[0].length > 1) {
-      setData((prevData) => prevData.map((row) => row.filter((_, i) => i !== index)))
+      setData((prevData) => prevData.map((row) => row.filter((_, i) => i !== index)));
+      setIsModified(true);
     } else {
-      Alert.alert("Error", "No se puede eliminar la última columna.")
+      Alert.alert("Error", "No se puede eliminar la última columna.");
     }
-  }
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
@@ -77,7 +150,10 @@ export default function TableEditorScreen() {
               <TextInput
                 label="Nombre de la tabla"
                 value={name}
-                onChangeText={setName}
+                onChangeText={(text) => {
+                  setName(text);
+                  setIsModified(true);
+                }}
                 mode="outlined"
                 style={styles.input}
               />
@@ -101,8 +177,8 @@ export default function TableEditorScreen() {
                       ))}
                       <IconButton
                         icon="close"
-                        size={20}
-                        onPress={() => removeRow(rowIndex)}
+                        size={24}
+                        onPress={() => confirmRemoveRow(rowIndex)}
                         style={styles.removeButton}
                       />
                     </View>
@@ -112,8 +188,8 @@ export default function TableEditorScreen() {
                       <IconButton
                         key={colIndex}
                         icon="close"
-                        size={20}
-                        onPress={() => removeColumn(colIndex)}
+                        size={24}
+                        onPress={() => confirmRemoveColumn(colIndex)}
                         style={styles.removeButton}
                       />
                     ))}
@@ -148,8 +224,11 @@ export default function TableEditorScreen() {
         </Snackbar>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  )
+  );
 }
+
+
+
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -177,13 +256,12 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    marginBottom: 8,
     alignItems: "center",
   },
   cell: {
-    width: 100,
+    width: 120,
+    height: 50,
     margin: 4,
-    padding: 8,
     textAlign: "center",
   },
   removeButton: {
@@ -203,5 +281,4 @@ const styles = StyleSheet.create({
     right: 16,
     bottom: 16,
   },
-})
-
+});
