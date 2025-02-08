@@ -9,12 +9,8 @@ export type RootStackParamList = {
     refreshNotes: () => Promise<void>;
     onSave?: () => void;
   };
-  ReportsScreen: undefined;
-  ReportEditorScreen: {
-    report?: ReportEntity;
-    refreshReports: () => Promise<void>;
-    onSave?: () => void;
-  };
+  ReportsScreen: { shouldRefresh: boolean };
+  ReportsEditorScreen: { report?: ReportEntity };
   TableEditorScreen: {
     table: TableEntity;
     onSave?: () => void;

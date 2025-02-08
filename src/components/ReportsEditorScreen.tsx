@@ -1,186 +1,227 @@
-import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { TextInput, Button, Text, Menu, Card } from 'react-native-paper';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Button, ScrollView, Image } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import {
-  addReportAsync,
-  updateReportAsync,
-  addTableAsync,
-  addPhotoAsync,
-} from '../database/database';
+import * as Location from 'expo-location';
+import { addReportAsync, updateReportAsync, ReportEntity } from '../database/database';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
 
-const ReportEditorScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const db = useSQLiteContext();
-  const { report } = route.params as { report?: any } || {};
+type ReportsEditorScreenProps = NativeStackScreenProps<RootStackParamList, 'ReportsEditorScreen'>;
 
-  // Estados del informe
-  const [name, setName] = useState(report?.name || '');
-  const [rockName, setRockName] = useState(report?.rock_name || '');
-  const [type, setType] = useState(report?.type || '');
-  const [notes, setNotes] = useState(report?.notes || '');
-  const [photo, setPhoto] = useState(report?.photo_id || null);
-  const [tableId, setTableId] = useState(report?.table_id || null);
-  const [tableData, setTableData] = useState<any>(null);
-  const [menuVisible, setMenuVisible] = useState(false);
-
-  // Cargar datos del informe si está en modo edición
-  useEffect(() => {
-    if (report) {
-      setName(report.name);
-      setRockName(report.rock_name);
-      setType(report.type);
-      setNotes(report.notes);
-      setPhoto(report.photo_id);
-      setTableId(report.table_id);
+const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, route }) => {
+  const { report } = route.params || {};
+  const [title, setTitle] = useState(report?.title || '');
+  const [type, setType] = useState<'sedimentary' | 'igneous' | 'free'>(report?.type || 'sedimentary');
+  const [dynamicTextsValues, setDynamicTextsValues] = useState<string[]>([]);
+  const [tableData, setTableData] = useState<{ rows: string[][]; columns: string[] }>(
+    report?.tableData ? JSON.parse(report.tableData) : {
+      rows: [['', '', '', '', ''], ['', '', '', '', ''], ['', '', '', '', '']],
+      columns: ['Minerales', 'Forma', 'Tamaño', 'Color', 'Porcentaje'],
     }
-  }, [report]);
+  );
+  const [photoUri, setPhotoUri] = useState(report?.photoUri || '');
+  const [latitude, setLatitude] = useState(report?.latitude || 0);
+  const [longitude, setLongitude] = useState(report?.longitude || 0);
 
-  // Obtener la tabla si existe
-  // Guardar informe
-  const handleSave = async () => {
+  const db = useSQLiteContext();
+
+  const dynamicTexts = {
+    sedimentary: ['Fábrica', 'Estructura', 'Textura', 'Tipo de Foliación', 'Protolito', 'Tipo de Metamorfismo', 'Zona o Facie', 'Grado'],
+    igneous: ['Granulometría', 'Madurez Textural', 'Selección', 'Redondez y Esfericidad', 'Estructura Sedimentaria'],
+    free: [],
+  };
+
+  useEffect(() => {
+    setDynamicTextsValues(dynamicTexts[type].map(() => ''));
+  }, [type]);
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Se necesitan permisos para acceder a la cámara.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setPhotoUri(result.assets[0].uri);
+      const location = await Location.getCurrentPositionAsync({});
+      setLatitude(location.coords.latitude);
+      setLongitude(location.coords.longitude);
+    }
+  };
+
+  const handleTableChange = (rowIndex: number, colIndex: number, value: string) => {
+    const newRows = [...tableData.rows];
+    newRows[rowIndex][colIndex] = value;
+    setTableData({ ...tableData, rows: newRows });
+  };
+
+  const handleSaveReport = async () => {
+    const newReport = {
+      type,
+      title,
+      photoUri,
+      latitude,
+      longitude,
+      text1: dynamicTextsValues[0] || '',
+      text2: dynamicTextsValues[1] || '',
+      tableData: JSON.stringify(tableData),
+    };
+  
     try {
       if (report) {
-        await updateReportAsync(db, report.id, name, rockName, type, notes, photo, tableId);
+        await updateReportAsync(db, { ...report, ...newReport });
       } else {
-        await addReportAsync(db, name, rockName, type, notes, photo, tableId);
+        await addReportAsync(db, newReport);
       }
       navigation.goBack();
     } catch (error) {
-      console.error('Error al guardar el informe:', error);
+      console.error('Error al guardar el reporte:', error);
     }
-  };
-
-  // Seleccionar una foto
-  const handleSelectPhoto = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        const uri = result.assets[0].uri;
-        const photoId = await addPhotoAsync(db, uri, 0, 0);
-        setPhoto(photoId);
-      }
-    } catch (error) {
-      console.error('Error al seleccionar la foto:', error);
-    }
-  };
-
-  // Crear tabla según el tipo
-  const handleCreateTable = async (selectedType: string) => {
-    let initialData = [];
-    let tableName = '';
-
-    if (selectedType === 'Roca Metamórfica') {
-      initialData = [['Minerales', 'Forma', 'Tamaño', 'Color', 'Porcentaje'], ...Array(5).fill(['', '', '', '', ''])];
-      tableName = 'Tabla Metamórfica';
-    } else if (selectedType === 'Roca Sedimentaria') {
-      initialData = [['Tipo', 'Porcentaje', 'Minerales', 'Fósiles', 'Cemento', 'Matriz'], ...Array(2).fill(['', '', '', '', '', ''])];
-      tableName = 'Tabla Sedimentaria';
-    } else {
-      initialData = [['']];
-      tableName = 'Tabla en Blanco';
-    }
-
-    const newTableId = await addTableAsync(db, tableName, initialData.length, initialData[0].length, initialData);
-    setTableId(newTableId);
-    setType(selectedType);
-    setMenuVisible(false);
   };
 
   return (
     <ScrollView style={styles.container}>
-      {/* Campos del formulario */}
-      <TextInput label="Nombre del Informe" value={name} onChangeText={setName} style={styles.input} />
-      <TextInput label="Nombre de la Roca" value={rockName} onChangeText={setRockName} style={styles.input} />
-      <TextInput label="Notas" value={notes} onChangeText={setNotes} multiline style={styles.input} />
+      <TextInput
+        style={styles.input}
+        placeholder="Título"
+        value={title}
+        onChangeText={setTitle}
+      />
+      <Picker
+        selectedValue={type}
+        onValueChange={(value) => setType(value)}
+      >
+        <Picker.Item label="Roca Sedimentaria" value="sedimentary" />
+        <Picker.Item label="Roca Ígnea" value="igneous" />
+        <Picker.Item label="Libre" value="free" />
+      </Picker>
 
-      {/* Menú para seleccionar el tipo de informe */}
-      <View style={{ position: 'relative', zIndex: 1 }}>
-        <Menu
-          visible={menuVisible}
-          onDismiss={() => setMenuVisible(false)}
-          anchor={
-            <Button onPress={() => setMenuVisible(true)} style={styles.menuButton}>
-              Seleccionar Tipo de Informe
-            </Button>
-          }
-        >
-          <Menu.Item onPress={() => handleCreateTable('Roca Metamórfica')} title="Roca Metamórfica" />
-          <Menu.Item onPress={() => handleCreateTable('Roca Sedimentaria')} title="Roca Sedimentaria" />
-          <Menu.Item onPress={() => handleCreateTable('Informe en Blanco')} title="Informe en Blanco" />
-        </Menu>
+      {dynamicTexts[type].map((label, index) => (
+        <TextInput
+          key={index}
+          style={styles.input}
+          placeholder={label}
+          value={dynamicTextsValues[index]}
+          onChangeText={(value) => {
+            const newDynamicTextsValues = [...dynamicTextsValues];
+            newDynamicTextsValues[index] = value;
+            setDynamicTextsValues(newDynamicTextsValues);
+          }}
+        />
+      ))}
+
+      <View style={styles.tableContainer}>
+        <View style={styles.tableHeader}>
+          {tableData.columns.map((column, colIndex) => (
+            <Text key={colIndex} style={styles.tableHeaderCell}>
+              {column}
+            </Text>
+          ))}
+        </View>
+        {tableData.rows.map((row, rowIndex) => (
+          <View key={rowIndex} style={styles.tableRow}>
+            {row.map((cell, colIndex) => (
+              <TextInput
+                key={colIndex}
+                style={styles.tableCell}
+                value={cell}
+                onChangeText={(value) => handleTableChange(rowIndex, colIndex, value)}
+              />
+            ))}
+          </View>
+        ))}
       </View>
 
-      {/* Botón para agregar foto */}
-      <Button mode="contained" onPress={handleSelectPhoto} style={styles.button}>
-        {photo ? 'Cambiar Foto' : 'Agregar Foto'}
-      </Button>
+      <Button title="Tomar Foto" onPress={handleTakePhoto} />
+      {photoUri ? (
+        <View style={styles.photoContainer}>
+          <Image source={{ uri: photoUri }} style={styles.photo} />
+          <Text style={styles.coordinates}>
+            Latitud: {latitude}, Longitud: {longitude}
+          </Text>
+        </View>
+      ) : null}
 
-      {/* Mostrar la tabla si existe */}
-      {tableData && (
-        <Card style={styles.tableCard}>
-          <Card.Title title={tableData.name} />
-          <Card.Content>
-            {tableData.data.map((row: string[], rowIndex: number) => (
-              <View key={rowIndex} style={styles.tableRow}>
-                {row.map((cell, cellIndex) => (
-                  <Text key={cellIndex} style={styles.tableCell}>
-                    {cell}
-                  </Text>
-                ))}
-              </View>
-            ))}
-          </Card.Content>
-        </Card>
-      )}
-
-      {/* Botón para guardar */}
-      <Button mode="contained" onPress={handleSave} style={styles.saveButton}>
-        Guardar Informe
-      </Button>
+      <TouchableOpacity style={styles.saveButton} onPress={handleSaveReport}>
+        <Text style={styles.saveButtonText}>Guardar</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };
 
-// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
   },
   input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 8,
     marginBottom: 16,
+    borderRadius: 4,
   },
-  menuButton: {
+  tableContainer: {
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
   },
-  button: {
-    marginBottom: 16,
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
   },
-  saveButton: {
-    marginTop: 16,
-  },
-  tableCard: {
-    marginVertical: 16,
-    padding: 10,
+  tableHeaderCell: {
+    flex: 1,
+    padding: 8,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   tableRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 8,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
   },
   tableCell: {
     flex: 1,
+    padding: 8,
     textAlign: 'center',
+  },
+  photoContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  photo: {
+    width: 200,
+    height: 200,
+    borderRadius: 8,
+  },
+  coordinates: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  saveButton: {
+    backgroundColor: 'blue',
+    padding: 16,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 
-export default ReportEditorScreen;
+export default ReportsEditorScreen;

@@ -38,18 +38,19 @@ export interface NoteAttachmentEntity {
   attachment_id: number;
 }
 
-
 export interface ReportEntity {
   id: number;
-  name: string;
-  rock_name: string;
-  type: string;
-  notes: string;
-  photo_id?: number; // Relación con fotos
-  table_id?: number; // Relación con tablas
+  type: 'sedimentary' | 'igneous' | 'free'; // Tipo de roca
+  title: string; // Título del reporte
+  photoUri?: string; // URI de la foto
+  latitude?: number; // Latitud de la foto
+  longitude?: number; // Longitud de la foto
+  text1?: string; // Texto dinámico 1 (depende del tipo de roca)
+  text2?: string; // Texto dinámico 2 (depende del tipo de roca)
+  tableData?: string; // Datos de la tabla en formato JSON
+  createdAt: string; // Fecha de creación
+  updatedAt: string; // Fecha de actualización
 }
-
-
 /**
  * Agrega un nuevo item a la lista de tareas.
  */
@@ -102,6 +103,8 @@ export async function fetchNotesAsync(db: SQLiteDatabase): Promise<NoteEntity[]>
   }));
 }
 
+
+
 export async function updateNoteAsync(db: SQLiteDatabase, id: number, title: string, content: string, photos: PhotoEntity[] = [], tables: TableEntity[] = []): Promise<void> {
   const photosJson = JSON.stringify(photos);
   const tablesJson = JSON.stringify(tables);
@@ -142,9 +145,7 @@ export async function fetchPhotosByDateAsync(db: SQLiteDatabase, filter: 'day' |
 }
 
 
-/**
- * CRUD de Tablas
- */
+
 /** 
  * CRUD de Tablas
  */
@@ -251,78 +252,59 @@ export async function deleteNoteAttachmentAsync(db: SQLiteDatabase, id: number):
 }
 
 
-/**
- * Agrega un nuevo informe a la base de datos.
- */
-export async function addReportAsync(
-  db: SQLiteDatabase,
-  name: string,
-  rock_name: string,
-  type: string,
-  notes: string,
-  photo_id?: number,
-  table_id?: number
-): Promise<void> {
-  await db.runAsync(
-    'INSERT INTO reports (name, rock_name, type, notes, photo_id, table_id) VALUES (?, ?, ?, ?, ?, ?);',
-    name,
-    rock_name,
-    type,
-    notes,
-    photo_id || null,
-    table_id || null
-  );
+
+export async function addReportAsync(db: SQLiteDatabase, report: Omit<ReportEntity, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
+  const createdAt = new Date().toISOString();
+  const updatedAt = createdAt;
+
+  try {
+    await db.runAsync(
+      `INSERT INTO reports (
+        type, title, photoUri, latitude, longitude, text1, text2, tableData, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+      report.type, report.title, report.photoUri, report.latitude, report.longitude, report.text1, report.text2, report.tableData, createdAt, updatedAt
+    );
+    console.log('Reporte agregado correctamente:', report); // Verifica los datos insertados
+  } catch (error) {
+    console.error('Error al agregar el reporte:', error);
+  }
 }
 
-/**
- * Obtiene todos los informes de la base de datos.
- */
 export async function fetchReportsAsync(db: SQLiteDatabase): Promise<ReportEntity[]> {
-  return await db.getAllAsync<ReportEntity>(`
-    SELECT r.*, p.uri AS photo_uri, t.name AS table_name 
-    FROM reports r
-    LEFT JOIN photos p ON r.photo_id = p.id
-    LEFT JOIN tables t ON r.table_id = t.id
-    ORDER BY r.id DESC;
-  `);
+  try {
+    const reports = await db.getAllAsync<ReportEntity>('SELECT * FROM reports;');
+    console.log('Reportes recuperados:', reports); // Verifica los datos recuperados
+    return reports;
+  } catch (error) {
+    console.error('Error al recuperar los reportes:', error);
+    return [];
+  }
 }
 
-/**
- * Actualiza un informe en la base de datos.
- */
-export async function updateReportAsync(
-  db: SQLiteDatabase,
-  id: number,
-  name: string,
-  rock_name: string,
-  type: string,
-  notes: string,
-  photo_id?: number,
-  table_id?: number
-): Promise<void> {
-  await db.runAsync(
-    'UPDATE reports SET name = ?, rock_name = ?, type = ?, notes = ?, photo_id = ?, table_id = ? WHERE id = ?;',
-    name,
-    rock_name,
-    type,
-    notes,
-    photo_id || null,
-    table_id || null,
-    id
-  );
+export async function updateReportAsync(db: SQLiteDatabase, report: ReportEntity): Promise<void> {
+  const updatedAt = new Date().toISOString();
+
+  try {
+    await db.runAsync(
+      `UPDATE reports SET
+        type = ?, title = ?, photoUri = ?, latitude = ?, longitude = ?, text1 = ?, text2 = ?, tableData = ?, updatedAt = ?
+      WHERE id = ?;`,
+      report.type, report.title, report.photoUri, report.latitude, report.longitude, report.text1, report.text2, report.tableData, updatedAt, report.id
+    );
+    console.log('Reporte actualizado correctamente');
+  } catch (error) {
+    console.error('Error al actualizar el reporte:', error);
+  }
 }
 
-/**
- * Elimina un informe de la base de datos.
- */
 export async function deleteReportAsync(db: SQLiteDatabase, id: number): Promise<void> {
-  await db.runAsync('DELETE FROM reports WHERE id = ?;', id);
+  try {
+    await db.runAsync('DELETE FROM reports WHERE id = ?;', id);
+    console.log('Reporte eliminado correctamente');
+  } catch (error) {
+    console.error('Error al eliminar el reporte:', error);
+  }
 }
-
-
-/**
- * Migración de la base de datos.
- */
  /**
  * Migración de la base de datos.
  */
@@ -371,14 +353,17 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
       );
 
       CREATE TABLE IF NOT EXISTS reports (
-        id INTEGER PRIMARY KEY NOT NULL,
-        name TEXT,
-        rock_name TEXT,
-        type TEXT,
-        notes TEXT,
-        photo_id INTEGER,
-        table_id INTEGER,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        photoUri TEXT,
+        latitude REAL,
+        longitude REAL,
+        text1 TEXT,
+        text2 TEXT,
+        tableData TEXT,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
       );
     `);
     currentDbVersion = 6;

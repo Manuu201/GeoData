@@ -1,59 +1,107 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, TouchableOpacity } from 'react-native';
-import { Text, Button, Card } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-import { fetchReportsAsync, deleteReportAsync } from '../database/database';
-import { SQLiteDatabase } from 'expo-sqlite';
+import { FlatList, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSQLiteContext } from 'expo-sqlite';
+import { fetchReportsAsync, deleteReportAsync, ReportEntity } from '../database/database';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
+import { useFocusEffect } from '@react-navigation/native'; // Importar useFocusEffect
 
-interface ReportScreenProps {
-  db: SQLiteDatabase;
-}
+type ReportsScreenProps = NativeStackScreenProps<RootStackParamList, 'ReportsScreen'>;
 
-const ReportScreen: React.FC<ReportScreenProps> = ({ db }) => {
-  const navigation = useNavigation<{
-    navigate: (screen: string, params: { db: SQLiteDatabase; report?: any }) => void;
-  }>();
-  const [reports, setReports] = useState([]);
+const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation, route }) => {
+  const [reports, setReports] = useState<ReportEntity[]>([]);
+  const db = useSQLiteContext();
 
-  useEffect(() => {
-    loadReports();
-  }, []);
+  // Recargar los reportes cuando la pantalla recibe el foco
+  useFocusEffect(
+    React.useCallback(() => {
+      loadReports();
+    }, [])
+  );
 
   const loadReports = async () => {
-    const data = await fetchReportsAsync(db);
-    setReports(data);
+    const reports = await fetchReportsAsync(db);
+    console.log('Reportes recuperados:', reports); // Verifica los datos recuperados
+    setReports(reports);
   };
 
-  const handleDelete = async (id: number) => {
+  // Editar un reporte
+  const handleEditReport = (report: ReportEntity) => {
+    navigation.navigate('ReportsEditorScreen', { report });
+  };
+
+  // Eliminar un reporte
+  const handleDeleteReport = async (id: number) => {
     await deleteReportAsync(db, id);
-    loadReports();
+    loadReports(); // Recargar la lista después de eliminar
   };
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <Button mode="contained" onPress={() => navigation.navigate('ReportEditorScreen', { db })}>
-        Crear Nuevo Informe
-      </Button>
-
+    <View style={styles.container}>
       <FlatList
         data={reports}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <Card style={{ marginVertical: 8 }}>
-            <TouchableOpacity onPress={() => navigation.navigate('ReportEditorScreen', { db, report: item })}>
-              <Card.Title title={item.name} subtitle={item.rock_name} />
-              <Card.Content>
-                <Text>{item.type}</Text>
-              </Card.Content>
-            </TouchableOpacity>
-            <Card.Actions>
-              <Button onPress={() => handleDelete(item.id)}>Eliminar</Button>
-            </Card.Actions>
-          </Card>
+          <View style={styles.reportItem}>
+            <Text style={styles.title}>{item.title}</Text>
+            <Text>Tipo: {item.type}</Text>
+            <View style={styles.actions}>
+              <TouchableOpacity onPress={() => handleEditReport(item)}>
+                <Text style={styles.editButton}>Editar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteReport(item.id)}>
+                <Text style={styles.deleteButton}>Eliminar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
       />
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => navigation.navigate('ReportsEditorScreen')}
+      >
+        <Text style={styles.addButtonText}>Crear Reporte</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
-export default ReportScreen;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  reportItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  editButton: {
+    color: 'blue',
+  },
+  deleteButton: {
+    color: 'red',
+  },
+  addButton: {
+    backgroundColor: 'green',
+    padding: 16,
+    alignItems: 'center',
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+});
+
+export default ReportsScreen;

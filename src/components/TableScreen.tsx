@@ -1,109 +1,119 @@
-import { useState, useCallback } from "react"
-import { FlatList, StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native"
-import { useSQLiteContext } from "expo-sqlite"
-import { useNavigation, useFocusEffect } from "@react-navigation/native"
-import type { StackNavigationProp } from "@react-navigation/stack"
-import { TableEntity, fetchTablesAsync, addTableAsync, deleteTableAsync } from "../database/database"
-import { SafeAreaView } from "react-native-safe-area-context"
-import { Card, Text, TextInput, Button, FAB, Dialog, Portal, useTheme, Snackbar, IconButton } from "react-native-paper"
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"
+import { useState, useCallback } from "react";
+import { FlatList, StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import { TableEntity, fetchTablesAsync, addTableAsync, deleteTableAsync } from "../database/database";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Card, Text, TextInput, Button, FAB, Dialog, Portal, useTheme, Snackbar, IconButton } from "react-native-paper";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 type RootStackParamList = {
-  TableEditorScreen: { table: TableEntity; onSave?: () => void }
-}
+  TableEditorScreen: { table: TableEntity; onSave?: () => void };
+};
 
-const ITEMS_PER_PAGE = 5 // Cantidad de tablas por página
+const ITEMS_PER_PAGE = 5; // Cantidad de tablas por página
 
 export default function TableScreen() {
-  const db = useSQLiteContext()
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList, "TableEditorScreen">>()
-  const [tables, setTables] = useState<TableEntity[]>([])
-  const [filteredTables, setFilteredTables] = useState<TableEntity[]>([])
-  const [newTableName, setNewTableName] = useState("")
-  const [newTableRows, setNewTableRows] = useState("")
-  const [newTableColumns, setNewTableColumns] = useState("")
-  const [deleteId, setDeleteId] = useState<number | null>(null)
-  const [isDialogVisible, setIsDialogVisible] = useState(false)
-  const [snackbarVisible, setSnackbarVisible] = useState(false)
-  const [snackbarMessage, setSnackbarMessage] = useState("")
-  const [errorMessage, setErrorMessage] = useState("")
-  const [filterDate, setFilterDate] = useState("")
-  const [page, setPage] = useState(0)
-  const theme = useTheme()
+  const db = useSQLiteContext();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList, "TableEditorScreen">>();
+  const [tables, setTables] = useState<TableEntity[]>([]);
+  const [sortedTables, setSortedTables] = useState<TableEntity[]>([]);
+  const [newTableName, setNewTableName] = useState("");
+  const [newTableRows, setNewTableRows] = useState("");
+  const [newTableColumns, setNewTableColumns] = useState("");
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [isDialogVisible, setIsDialogVisible] = useState(false);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "date">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(0);
+  const theme = useTheme();
 
   useFocusEffect(
     useCallback(() => {
-      fetchTables()
-    }, []),
-  )
+      fetchTables();
+    }, [])
+  );
 
   async function fetchTables() {
-    const allTables = await fetchTablesAsync(db)
-    setTables(allTables)
-    setFilteredTables(allTables)
-    setPage(0) // Resetear página al actualizar
+    const allTables = await fetchTablesAsync(db);
+    setTables(allTables);
+    sortTables(allTables, sortBy, sortOrder);
+    setPage(0);
   }
 
-  function handleFilterByDate() {
-    if (filterDate.trim() === "") {
-      setFilteredTables(tables)
-    } else {
-      const filtered = tables.filter((table) => table.created_at.startsWith(filterDate))
-      setFilteredTables(filtered)
-    }
-    setPage(0) // Resetear a la primera página tras filtrar
+  function sortTables(data: TableEntity[], by: "name" | "date", order: "asc" | "desc") {
+    const sorted = [...data].sort((a, b) => {
+      if (by === "name") {
+        return order === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+      } else {
+        return order === "asc" ? a.created_at.localeCompare(b.created_at) : b.created_at.localeCompare(a.created_at);
+      }
+    });
+
+    setSortedTables(sorted);
+  }
+
+  function toggleSort(by: "name" | "date") {
+    const newOrder = sortOrder === "asc" ? "desc" : "asc";
+    setSortBy(by);
+    setSortOrder(newOrder);
+    sortTables(tables, by, newOrder);
   }
 
   async function handleAddTable() {
-    const rows = Number.parseInt(newTableRows, 10)
-    const columns = Number.parseInt(newTableColumns, 10)
+    const rows = Number.parseInt(newTableRows, 10);
+    const columns = Number.parseInt(newTableColumns, 10);
 
     if (newTableName.trim() === "") {
-      setErrorMessage("El nombre de la tabla no puede estar vacío.")
-      return
+      setErrorMessage("El nombre de la tabla no puede estar vacío.");
+      return;
     }
     if (isNaN(rows) || isNaN(columns) || rows <= 0 || columns <= 0) {
-      setErrorMessage("Filas y columnas deben ser números positivos.")
-      return
+      setErrorMessage("Filas y columnas deben ser números positivos.");
+      return;
     }
 
-    await addTableAsync(db, newTableName, rows, columns, Array(rows).fill(Array(columns).fill("")))
-    setNewTableName("")
-    setNewTableRows("")
-    setNewTableColumns("")
-    setIsDialogVisible(false)
-    fetchTables()
-    setSnackbarMessage("Tabla agregada exitosamente")
-    setSnackbarVisible(true)
+    // Corrección: Genera correctamente la estructura de la tabla vacía
+    const emptyData = Array.from({ length: rows }, () => Array(columns).fill(""));
+
+    await addTableAsync(db, newTableName, rows, columns, emptyData);
+    setNewTableName("");
+    setNewTableRows("");
+    setNewTableColumns("");
+    setIsDialogVisible(false);
+    fetchTables();
+    setSnackbarMessage("Tabla agregada exitosamente");
+    setSnackbarVisible(true);
   }
 
-  async function handleDeleteTable() {
-    if (deleteId !== null) {
-      await deleteTableAsync(db, deleteId)
-      fetchTables()
-    }
-    setDeleteId(null)
-    setSnackbarMessage("Tabla eliminada exitosamente")
-    setSnackbarVisible(true)
+  async function handleDeleteTable(id: number) {
+    await deleteTableAsync(db, id);
+    fetchTables();
+    setSnackbarMessage("Tabla eliminada exitosamente");
+    setSnackbarVisible(true);
   }
 
-  // Paginación
-  const totalPages = Math.ceil(filteredTables.length / ITEMS_PER_PAGE)
-  const currentTables = filteredTables.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(sortedTables.length / ITEMS_PER_PAGE);
+  const currentTables = sortedTables.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
         <Text style={[styles.title, { color: theme.colors.primary }]}>Tablas Geológicas</Text>
 
-        {/* Filtro por fecha */}
-        <TextInput
-          label="Filtrar por fecha (YYYY-MM-DD)"
-          value={filterDate}
-          onChangeText={setFilterDate}
-          onSubmitEditing={handleFilterByDate}
-          style={styles.filterInput}
-        />
+        {/* Botones de ordenamiento */}
+        <View style={styles.sortContainer}>
+          <Button onPress={() => toggleSort("name")}>
+            Ordenar por Nombre {sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+          </Button>
+          <Button onPress={() => toggleSort("date")}>
+            Ordenar por Fecha {sortBy === "date" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+          </Button>
+        </View>
 
         <FlatList
           data={currentTables}
@@ -124,7 +134,7 @@ export default function TableScreen() {
                 <Button onPress={() => navigation.navigate("TableEditorScreen", { table: item, onSave: fetchTables })}>
                   Editar
                 </Button>
-                <Button onPress={() => setDeleteId(item.id)} textColor={theme.colors.error}>
+                <Button onPress={() => handleDeleteTable(item.id)} textColor={theme.colors.error}>
                   Eliminar
                 </Button>
               </Card.Actions>
@@ -139,15 +149,15 @@ export default function TableScreen() {
           <IconButton icon="chevron-right" disabled={page >= totalPages - 1} onPress={() => setPage(page + 1)} />
         </View>
 
+        {/* Diálogo para agregar tabla */}
         <Portal>
-          {/* Diálogo para agregar tabla */}
           <Dialog visible={isDialogVisible} onDismiss={() => setIsDialogVisible(false)}>
-            <Dialog.Title>Nueva Tabla</Dialog.Title>
+            <Dialog.Title>Agregar Tabla</Dialog.Title>
             <Dialog.Content>
-              <TextInput label="Nombre de la tabla" value={newTableName} onChangeText={setNewTableName} style={styles.input} />
-              <TextInput label="Filas" keyboardType="numeric" value={newTableRows} onChangeText={setNewTableRows} style={styles.input} />
-              <TextInput label="Columnas" keyboardType="numeric" value={newTableColumns} onChangeText={setNewTableColumns} style={styles.input} />
-              {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+              <TextInput label="Nombre" value={newTableName} onChangeText={setNewTableName} />
+              <TextInput label="Filas" value={newTableRows} onChangeText={setNewTableRows} keyboardType="numeric" />
+              <TextInput label="Columnas" value={newTableColumns} onChangeText={setNewTableColumns} keyboardType="numeric" />
+              {errorMessage ? <Text style={{ color: "red" }}>{errorMessage}</Text> : null}
             </Dialog.Content>
             <Dialog.Actions>
               <Button onPress={() => setIsDialogVisible(false)}>Cancelar</Button>
@@ -160,20 +170,19 @@ export default function TableScreen() {
         <Snackbar visible={snackbarVisible} onDismiss={() => setSnackbarVisible(false)}>{snackbarMessage}</Snackbar>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  )
+  );
 }
+
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, padding: 16 },
   title: { fontSize: 24, fontWeight: "bold", textAlign: "center", marginBottom: 16 },
-  filterInput: { marginBottom: 10 },
+  sortContainer: { flexDirection: "row", justifyContent: "space-around", marginBottom: 10 },
   list: { paddingBottom: 16 },
   tableCard: { marginBottom: 12 },
   tableName: { fontSize: 18, fontWeight: "bold" },
   tableInfo: { fontSize: 14, color: "gray" },
   pagination: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 10 },
   fab: { position: "absolute", right: 16, bottom: 16 },
-  input: { marginBottom: 10 },
-  errorText: { color: "red", fontSize: 12, marginTop: 5 },
-})
+});
