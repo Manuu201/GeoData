@@ -2,7 +2,7 @@
 
 Este proyecto es una aplicación móvil desarrollada con React Native y Expo, que utiliza SQLite como base de datos local. Permite gestionar notas, fotos con ubicación y tablas dinámicas.
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```bash
 /src
@@ -21,7 +21,7 @@ Este proyecto es una aplicación móvil desarrollada con React Native y Expo, qu
 
 # Requisitos y Ejecución del Proyecto React Native con Expo y SQLite
 
-## 🚀 Requisitos para ejecutar el proyecto
+## Requisitos para ejecutar el proyecto
 
 - **Node.js** (versión recomendada: >= 16)
 - **Expo CLI** instalado globalmente:
@@ -73,7 +73,7 @@ La carpeta `/assets` contiene imágenes y otros recursos estáticos utilizados e
 La lógica de la base de datos SQLite se encuentra en `/database/database.ts`.  
 Este archivo contiene las funciones para crear, leer, actualizar y eliminar datos en las tablas `notes`, `photos` y `tables`.
 
-## ▶️ Cómo ejecutar la aplicación
+## ▶Cómo ejecutar la aplicación
 
 1. **Clonar el repositorio**
 
