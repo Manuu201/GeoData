@@ -5,15 +5,11 @@ Este proyecto es una aplicación móvil desarrollada con React Native y Expo, qu
 ## 📁 Estructura del Proyecto
 
 ```bash
-/my-app
+/src
 │── /assets              # Imágenes y recursos estáticos
 │── /components          # Componentes reutilizables
 │── /database            # Lógica de la base de datos SQLite
 │── /screens             # Pantallas principales de la app
-│   ├── HomeScreen.tsx         # Listado de tablas y CRUD
-│   ├── ProfileScreen.tsx      # CRUD de notas
-│   ├── SettingsScreen.tsx     # Gestión de fotos y mapa
-│   ├── TableEditorScreen.tsx  # Editor de tablas dinámicas
 │── /navigation          # Configuración de la navegación
 │── App.tsx              # Entrada principal de la app
 │── database.ts          # Archivo principal de la base de datos
@@ -43,10 +39,10 @@ Se crean y gestionan las siguientes tablas:
 
 # Funcionalidades Principales
 
-- **Gestión de notas** en `ProfileScreen.tsx`.
-- **Captura de fotos con ubicación** en `SettingsScreen.tsx`.
+- **Gestión de notas** en `NotesScreen.tsx`.
+- **Captura de fotos con ubicación** en `PhotosScreen.tsx`.
 - **Visualización de fotos en un mapa** con `react-native-maps`.
-- **Creación y edición de tablas dinámicas** en `HomeScreen.tsx` y `TableEditorScreen.tsx`.
+- **Creación y edición de tablas dinámicas** en `TablesScreen.tsx` y `TableEditorScreen.tsx`.
 - **Persistencia de datos** con SQLite.
 
 # Dependencias Clave
