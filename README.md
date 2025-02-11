@@ -73,7 +73,7 @@ La carpeta `/assets` contiene imágenes y otros recursos estáticos utilizados e
 La lógica de la base de datos SQLite se encuentra en `/database/database.ts`.  
 Este archivo contiene las funciones para crear, leer, actualizar y eliminar datos en las tablas `notes`, `photos` y `tables`.
 
-## ▶Cómo ejecutar la aplicación
+## Cómo ejecutar la aplicación
 
 1. **Clonar el repositorio**
 
@@ -99,9 +99,4 @@ En un dispositivo físico: Escanea el código QR que aparece en la terminal con 
 ¡Listo! La aplicación se ejecutará en tu emulador o dispositivo físico.
 
 
-### Notas adicionales:
-- Asegúrate de tener **Node.js** instalado (versión recomendada >= 16).
-- Si es la primera vez que usas Expo, instala **Expo CLI** globalmente con:
-```sh
-npm install -g expo-cli
-```
+
