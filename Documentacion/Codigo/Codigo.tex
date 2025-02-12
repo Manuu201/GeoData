@@ -1,0 +1,122 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\title{Documentación del Código del Proyecto}
+\author{Manuel Vargas}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{Introducción}
+La geología es una disciplina fundamental para el estudio y comprensión de los procesos que conforman la Tierra. A lo largo de la historia, los geólogos han utilizado diversas herramientas y metodologías para investigar los materiales que componen nuestro planeta, así como para entender los fenómenos naturales que ocurren a lo largo del tiempo. En la actualidad, la tecnología y la digitalización han revolucionado el trabajo de los geólogos, permitiendo un enfoque más preciso, eficiente y accesible para la recopilación y análisis de datos.
+
+Este proyecto tiene como objetivo desarrollar una aplicación móvil para geólogos, diseñada específicamente para asistir en la recopilación, organización y análisis de datos de campo en tiempo real. La aplicación integrará varias funcionalidades, tales como el almacenamiento de notas, fotos, tablas y la gestión de informes geológicos. A través de su interfaz, los geólogos podrán registrar información relacionada con las muestras recolectadas, sus coordenadas geográficas, las características de las rocas analizadas y otras variables de interés. Además, la aplicación permitirá la creación de informes con plantillas específicas para diferentes tipos de rocas y otros elementos geológicos, facilitando así la generación de informes técnicos de forma rápida y eficiente.
+
+La importancia de este proyecto radica en la optimización del trabajo de campo, donde la recopilación de datos de manera eficiente y organizada es esencial para el éxito de cualquier investigación geológica. La aplicación propuesta no solo proporcionará un sistema de almacenamiento de datos robusto, sino también herramientas de análisis y presentación de los mismos, mejorando la productividad y precisión de los geólogos durante sus estudios.
+
+En este contexto, el uso de herramientas como React Native, Expo y SQLite, junto con librerías especializadas, permitirá que la aplicación sea funcional, accesible y adaptada a las necesidades específicas del entorno de trabajo de los geólogos. Este proyecto, por tanto, busca no solo facilitar el trabajo de campo, sino también contribuir al avance en la investigación geológica mediante el uso de tecnologías innovadoras.
+
+\section{Estructura del Proyecto}
+
+La estructura del proyecto está organizada de manera que favorece la modularidad, el mantenimiento y la escalabilidad. A continuación se describe la disposición de los principales directorios y archivos en el proyecto:
+
+\begin{itemize}
+    \item \textbf{/src}: Este es el directorio principal que contiene todo el código fuente de la aplicación. A continuación se detallan los subdirectorios y archivos más relevantes dentro de esta carpeta:
+    \begin{itemize}
+        \item \textbf{/assets}: Aquí se almacenan todas las imágenes y recursos estáticos utilizados en la aplicación, tales como iconos, imágenes de fondo y otros elementos visuales.
+        \item \textbf{/components}: Contiene los componentes reutilizables de la aplicación, tales como botones personalizados, formularios, cuadros de texto y otros elementos de interfaz de usuario que se pueden utilizar en múltiples pantallas.
+        \item \textbf{/database}: Este directorio incluye toda la lógica relacionada con la base de datos SQLite, como la creación, modificación y acceso a las tablas que almacenan los datos de la aplicación (notas, fotos, tablas y otros elementos), basicamente se encuentra todo el CRUD relacionado a cada entidad utilizada en la aplicacion, ademas de que estan las estructuras de cada elemento.
+        \item \textbf{/screens}: Contiene las pantallas principales de la aplicación. Cada una de estas pantallas está organizada de manera independiente para mejorar la claridad y facilidad de mantenimiento.
+        \item \textbf{/navigation}: Aquí se encuentra la configuración de la navegación de la aplicación, como el 'TabsNavigator' para la navegación entre pantallas. Este directorio gestiona el enrutamiento de la app para facilitar el desplazamiento entre diferentes secciones, todas las nuevos componentes o pantallas que se quieran ingresar en la aplicacion deben estar en el navigator.
+    \end{itemize}
+    \item \textbf{App.tsx}: Este archivo es el punto de entrada principal de la aplicación. Se encarga de inicializar la aplicación, configurar la navegación y establecer el entorno necesario para que la aplicación funcione correctamente.
+    \item \textbf{package.json}: Contiene las dependencias del proyecto, así como la configuración de scripts y otros detalles relevantes para la gestión del proyecto mediante npm o yarn.
+    \item \textbf{README.md}: Este archivo proporciona la documentación general del proyecto, incluyendo la descripción del propósito de la aplicación, las instrucciones para la instalación y configuración, y cualquier otra información relevante para los desarrolladores o colaboradores que trabajen en el proyecto.
+\end{itemize}
+
+La estructura modular de la aplicación facilita tanto el desarrollo como el mantenimiento de la misma, asegurando que cada componente y funcionalidad esté organizada de manera clara y accesible. Esta organización también permite una fácil expansión de la aplicación en el futuro, ya que nuevas funcionalidades o componentes pueden ser añadidos sin afectar la estructura general del proyecto.
+
+
+\section{Dependencias}
+
+Para poder utilizar el código del proyecto, es necesario instalar las siguientes dependencias:
+
+\begin{itemize}
+    \item \textbf{Node.js}: Es un entorno de ejecución para JavaScript que permite ejecutar código JavaScript en el servidor, es obligatorio tenerlo para poder ejecutar la aplicacion. Se puede descargar e instalar desde el sitio web oficial de Node.js.
+    \item \textbf{Android Studio}: Posee un emulador de Android que permite probar la aplicación en un entorno virtual. Se puede descargar e instalar desde el sitio web oficial de Android Studio.
+    \item \textbf{Expo CLI}: Es una herramienta no obligatoria de línea de comandos que facilita el desarrollo de aplicaciones móviles con React Native y Expo. Se puede instalar mediante npm o yarn.
+\end{itemize}
+
+
+\section{Descripción del Código}
+\subsection{screens}
+
+\subsubsection{Photos}
+Descripción detallada de la pantalla de fotos, incluyendo la lógica y la interfaz de usuario.
+\begin{itemize}
+    \item \textbf{PhotosScreen.tsx}: Archivo principal de la pantalla de fotos, aqui se permite tomar fotos, ver las fotos existentes y eliminarlas, ademas de que hay una opcion de ver la ubicacion de la imagen a traves de Google Maps. 
+\end{itemize}
+
+\subsubsection{Tables}
+Descripción detallada de la pantalla de tablas, incluyendo la lógica y la interfaz de usuario.
+\begin{itemize}
+    \item \textbf{TablesScreen.tsx}: Archivo principal de la pantalla de tablas, aqui se permite crear tablas, ver las tablas existentes y eliminarlas, ademas de poder ordenarlas segun el filtro que convenga. 
+    \item \textbf{TableEditorScreen.tsx}: Pantalla de edición de tablas, donde se pueden modificar los contenidos de una tabla existente. Dentro de esta pantalla se pueden agregar filas y columnas, así como editar los valores de las celdas.
+\end{itemize}
+
+\subsubsection{Reports}
+Descripción detallada de la pantalla de informes, incluyendo la lógica y la interfaz de usuario.
+\begin{itemize}
+    \item \textbf{ReportsScreen.tsx}: Archivo principal de la pantalla de informes, aqui se permite crear informes, ver los informes existentes y eliminarlos, ademas de poder ordenarlos segun el filtro que convenga. 
+    \item \textbf{ReportEditorScreen.tsx}: Pantalla de edición de informes, donde se pueden modificar los contenidos de un informe existente. Dentro de esta pantalla se puede escoger una de las plantillas propuestas para acelerar el proceso de creacion de informes, tambien se pueden agregar imagenes y modificar la tabla escogida segun el tipo de informe que se este creando.
+\end{itemize}
+
+\subsubsection{Notes}
+Descripción detallada de la pantalla de notas, incluyendo la lógica y la interfaz de usuario.
+\begin{itemize}
+    \item \textbf{NotesScreen.tsx}: Archivo principal de la pantalla de notas, aqui se permite crear notas, ver las notas existentes y eliminarlas. 
+    \item \textbf{NoteEditorScreen.tsx}: Pantalla de edición de notas, donde se pueden modificar los contenidos de una nota existente. Dentro de esta pantalla se puede agregar imagenes y tablas previamente ya creadas en la aplicacion.
+\end{itemize}
+
+\subsection{components}
+
+\begin{itemize}
+    \item \textbf{ImageSelectionDialog.tsx}: Componente relacionado con la selección de imágenes, permite al usuario elegir una imagen creada con anterioridad en la aplicacion, donde se puede ordenar por varios parametros existentes.
+    \item \textbf{InsertOptionsDialog.tsx}: Componente relacionado con la inserción de elementos (tablas o imagenes) en las notas, permite al usuario elegir entre insertar una imagen o una tabla en la nota que se esta creando o editando.
+    \item \textbf{OfflineMapScreen.tsx}: Componente relacionado con la visualización de mapas sin conexión, permite al usuario ver la ubicación de una imagen, incluso si no hay conexión a Internet.
+    \item \textbf{PdfViewerScreen.tsx}: Componente relacionado con la visualización de archivos PDF, permite al usuario ver un archivo PDF en la aplicación.
+    \item \textbf{PhotoComponent.tsx}: Componente relacionado con la visualización de fotos, permite al usuario ver una foto en la aplicación.
+    \item \textbf{TableComponent.tsx}: Componente relacionado con la visualización de tablas, permite al usuario ver una tabla en la aplicación.
+    \item \textbf{TableSelectionDialog.tsx}: Componente relacionado con la selección de tablas, permite al usuario elegir una tabla creada con anterioridad en la aplicacion, donde se puede ordenar por varios parametros existentes.
+\end{itemize}
+
+
+\subsection{database}
+
+\begin{itemize}
+    \item \textbf{database.ts}: Archivo principal de la base de datos, donde se establece la conexión con la base de datos SQLite y se definen las tablas y entidades utilizadas en la aplicación.
+\end{itemize}
+
+\subsection{navigation}
+
+\begin{itemize}
+    \item \textbf{TabsNavigator.tsx}: Archivo principal de la navegación de la aplicación, donde se definen las pestañas y las pantallas principales de la aplicación.
+    \item \textbf{types.ts}: Archivo de tipos de datos, donde se definen los tipos de datos utilizados en la aplicación.
+\end{itemize}
+
+
+\section{Ejemplos de Uso}
+Proporcionar ejemplos de cómo utilizar el código.
+
+\section{Conclusión}
+Resumen de los puntos clave y posibles mejoras futuras.
+
+\end{document}

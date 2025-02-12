@@ -24,14 +24,14 @@ import {
   fetchPhotosAsync,
   PhotoEntity,
   TableEntity,
-} from "../database/database";
-import PhotoComponent from "../screens/PhotoComponent";
-import TableComponent from "../screens/TableComponent";
-import { RootStackParamList } from "../navigation/types";
+} from "../../database/database";
+import PhotoComponent from "../../components/PhotoComponent";
+import TableComponent from "../../components/TableComponent";
+import { RootStackParamList } from "../../navigation/types";
 import { useSQLiteContext } from "expo-sqlite";
-import InsertOptionsDialog from "../screens/InsertOptionsDialog";
-import ImageSelectionDialog from "../screens/ImageSelectionDialog";
-import TableSelectionDialog from "../screens/TableSelectionDialog";
+import InsertOptionsDialog from "../../components/InsertOptionsDialog";
+import ImageSelectionDialog from "../../components/ImageSelectionDialog";
+import TableSelectionDialog from "../../components/TableSelectionDialog";
 
 type RouteProps = RouteProp<RootStackParamList, "NoteEditorScreen">;
 type NavigationProp = StackNavigationProp<RootStackParamList, "NoteEditorScreen">;

@@ -1,0 +1,102 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{geometry}
+\geometry{top=1.0in, bottom=1.0in, left=1.0in, right=1.0in}
+
+\title{GeoData APP - Proyecto}
+\author{Manuel Vargas}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Contexto}
+La geologia es una ciencia que estudia la geodinámica de la Tierra, la composición de sus materiales y la historia de la vida en ella. Debido a ello los geologos se encargan de estudiar una zona y se intenta identificar el origen de las rocas, la historia de la vida en la zona y la historia de la Tierra. Para ello, los geólogos utilizan una variedad de herramientas y técnicas, como la observación de rocas y minerales y para realizar todas estas tareas utilizan una \textbf{Libreta} el problema de estas libretas es que es muy facil perder la informacion y no se puede compartir facilmente, ademas de que no se puede recuperar la informacion si se pierde la libreta. Y lo mas importante es el costo asociado a llevar a los geologos a la zona de estudio, si es que se produce un error en la toma de datos o en la interpretacion de los mismos, es un costo muy alto asociado a esto. Para evitar todos estos problemas se intenta desarrollar una aplicacion movil que permita a los geologos facilitar la toma de datos en terreno y la interpretacion de los mismos, ademas de ayudar en tener la informacion centralizada y facil de compartir.
+\section{Actores relevantes}
+Existen varios actores implicados en el desarrollo y uso de la GeoData APP. A continuación, se presentan algunos de los actores más relevantes:
+\begin{itemize}
+    \item Sistema: Es la que recibe toda la informacion recopilada por el geologo y la procesa segun lo que requiera el geologo.
+    \item Usuario: Persona (geologo) que utiliza la GeoData APP para recopilar y analizar datos geológicos.
+\end{itemize}
+
+\section{Diagrama de Contexto}
+El diagrama que se utilza para este caso es el siguiente:
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.6\textwidth]{}
+% \caption{Diagrama de Contexto de la GeoData APP}
+% \end{figure}
+
+\section{Objetivos y Criterios de Éxito}
+
+\begin{enumerate}
+\item \textbf{Objetivo 1:} Facil de usar para los geologos.
+\\Criterios de exito:
+\begin{itemize}
+    \item \textbf{Criterio 1:} Facil de entender.
+    \item \textbf{Criterio 2:} Minimizacion de boton a utilizar.
+    \item \textbf{Criterio 3:} Facil de exportar la informacion.
+\end{itemize}
+\item \textbf{Objetivo 2:} Generar informacion rapida y precisa. 
+\\Criterios de exito:
+\begin{itemize}
+    \item \textbf{Criterio 1:} Facil de ingresar la informacion.
+    \item \textbf{Criterio 2:} Utilizacion de pocos segundos al subir imagenes a la aplicacion.
+    \item \textbf{Criterio 3:} No demorarse mas de 3 segundos en tranformar la informacion deseada.
+\end{itemize}
+\item \textbf{Objetivo 3:} Portabilidad de la aplicacion
+\\Criterios de exito:
+\begin{itemize}
+    \item \textbf{Criterio 1:} Facil de instalar en cualquier dispositivo.
+    \item \textbf{Criterio 2:} Facilidad de uso en cualquier dispositivo.
+\end{itemize}
+
+\end{enumerate}
+
+\section{Requisitos Funcionales}
+Los requisitos funcionales son aquellos que definen las funcionalidades que debe tener la GeoData APP. A continuación, se presentan las funcionalidades que se espera que tenga la aplicación:
+
+\begin{itemize}
+    \item La aplicación debe permitir a los usuarios escribir, dibujar y pegar imágenes en un cuaderno digital, es decir un bloc de notas que permita ingresar informacion sobre la zona en donde se encuentre el geologo y poder guiarlo en el proceso de creacion de notas para reducir la omision de informacion relevante.
+    \item Los usuarios deben poder crear tablas respecto a la informacion recopilada en terreno, deben poder agregar, eliminar y editar filas y columnas. Como tambien deben existir plantillas de tablas para facilitar la creacion de las mismas.
+    \item La aplicacion debe permitir utilizar la tablas tablas creadas en la funcionalidad anterior para poder realizar el triangulo de clasificacion de las rocas y minerales
+    \item Los usuarios deben poder representar la orientacion de un plano a traves de los datos estructurales recopilados en terreno, tambien sirve como indicaciones de como representarlos.
+    \item La aplicación debe permitir la representación vertical de estratos geológicos, es decir, la representación de la secuencia de capas de roca en un área determinada, incluyendo una leyenda de cada tipo de roca.
+    \item Los usuarios deben poder tomar imágenes con georeferenciacion, es decir con sus respectivas coordenadas, es vital que todas las imagenes presenten referencias geograficas.
+\end{itemize}
+
+\section{Tecnologías a Usar}
+En este apartado, se detallan las tecnologías que se emplearán para el desarrollo de la GeoData APP. Entre las tecnologías a utilizar se encuentran:
+
+\begin{itemize}
+    \item Lenguaje de programación: JavaScript, la utilizacion de este lenguaje se debe a la facilidad para poder desarrollar aplicaciones moviles y la facilidad de poder integrar con otras tecnologias.
+    \item Framework: React Native (para desarrollo móvil)
+    \item Base de datos: SQLite, se decidio utilizar esta base de datos por la facilidad de integracion con la aplicacion movil y la facilidad de poder exportar la informacion, ademas de que es una base de datos que no requiere de un servidor para poder funcionar.
+    \item API para geolocalización: React Native posee librerias que facilitan la geolocalización para poder obtener las coordenadas de la ubicacion del geologo al momento de tomar fotos.
+    \item Herramientas de visualización: Para poder visualizar la informacion se utilizara las librerias proporcionadas por React Native para poder visualizar la informacion de manera mas clara.
+\end{itemize}
+
+\section{Riesgos}
+Aquí se identifican los posibles riesgos que podrían afectar el éxito del proyecto, como:
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{|p{4cm}|p{8cm}|p{2cm}|}
+    \hline
+    \textbf{Riesgo} & \textbf{Descripción} & \textbf{Nivel de Riesgo} \\ \hline
+    Riesgo de compatibilidad & Posibles problemas al intentar hacer la aplicación compatible con múltiples plataformas. & Medio \\ \hline
+    Riesgo de precisión geográfica & La geolocalización podría no ser precisa en áreas remotas, lo que afectaría la funcionalidad de la aplicación. & Alto \\ \hline
+    Riesgo de adopción del usuario & Puede haber una curva de aprendizaje para los usuarios si la interfaz no es lo suficientemente intuitiva. & Bajo \\ \hline
+    Envío tardío de la información & Si la información no se envía en el tiempo requerido, puede que la información no sea relevante para el estudio. & Alto \\ \hline
+    Poca capacidad de almacenamiento & Si la aplicación no tiene la capacidad de almacenar la información, puede que se pierda la información recopilada. & Medio \\ \hline
+    Pérdida de información & Si la información no se guarda de manera correcta, puede que se pierda la información recopilada. & Alto \\ \hline
+    \end{tabular}
+    \caption{Identificación de riesgos y niveles de impacto}
+    \label{tab:riesgos}
+    \end{table}
+    
+
+\end{document}

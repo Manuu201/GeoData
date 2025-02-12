@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
-import { fetchReportsAsync, deleteReportAsync, ReportEntity } from '../database/database';
+import { fetchReportsAsync, deleteReportAsync, ReportEntity } from '../../database/database';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { RootStackParamList } from '../../navigation/types';
 import { useFocusEffect } from '@react-navigation/native'; // Importar useFocusEffect
 
 type ReportsScreenProps = NativeStackScreenProps<RootStackParamList, 'ReportsScreen'>;

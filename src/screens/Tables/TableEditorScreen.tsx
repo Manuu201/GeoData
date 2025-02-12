@@ -9,7 +9,7 @@ import {
   BackHandler,
 } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
-import { updateTableAsync } from "../database/database";
+import { updateTableAsync } from "../../database/database";
 import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {

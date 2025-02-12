@@ -3,7 +3,7 @@ import { FlatList, StyleSheet, Image, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useSQLiteContext } from "expo-sqlite";
-import { addPhotoAsync, fetchPhotosAsync, deletePhotoAsync, type PhotoEntity } from "../database/database";
+import { addPhotoAsync, fetchPhotosAsync, deletePhotoAsync, type PhotoEntity } from "../../database/database";
 import { Linking } from "react-native";
 import { Card, FAB, Text, Button, Dialog, Portal, useTheme, Snackbar, IconButton, Menu } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -11,7 +11,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import React from "react";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from "@react-navigation/native";
-
+import { Platform } from "react-native";
 export default function PhotosScreen() {
   const navigation = useNavigation();
   const db = useSQLiteContext();
@@ -110,7 +110,10 @@ export default function PhotosScreen() {
   }
 
   function openInMaps(latitude: number, longitude: number) {
-    const url = `geo:${latitude},${longitude}?q=${latitude},${longitude}`;
+    const url =
+      Platform.OS === "ios"
+        ? `https://maps.apple.com/?q=${latitude},${longitude}`
+        : `geo:${latitude},${longitude}?q=${latitude},${longitude}`;
     Linking.openURL(url);
   }
 
@@ -240,8 +243,18 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 18, color: "#666", textAlign: "center" },
   list: { padding: 8 },
   card: { flex: 1, margin: 8, borderRadius: 12, elevation: 4 },
-  image: { height: 150, borderRadius: 12, resizeMode: 'cover' },
-  dialogImage: { width: "100%", height: 200, borderRadius: 12, marginBottom: 16, resizeMode: 'contain' },
+  image: { 
+    height: 150, 
+    borderRadius: 12, 
+    resizeMode: 'contain' // Asegura que la imagen se vea bien dentro del Card 
+  },
+  dialogImage: { 
+    width: "100%", 
+    height: 200, 
+    borderRadius: 12, 
+    marginBottom: 16, 
+    resizeMode: 'contain' // Evita que la imagen se recorte 
+  },
   coordinates: { textAlign: "center", marginTop: 8 },
   fab: { position: "absolute", right: 16, bottom: 16 },
   snackbar: { position: "absolute", bottom: 60 },

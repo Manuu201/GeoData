@@ -3,9 +3,9 @@ import { FlatList, StyleSheet, KeyboardAvoidingView, Platform, View } from "reac
 import { Text, Card, FAB, useTheme, Snackbar, IconButton } from "react-native-paper"
 import { useSQLiteContext } from "expo-sqlite"
 import { useNavigation, useFocusEffect } from "@react-navigation/native"
-import { fetchNotesAsync, deleteNoteAsync, type NoteEntity } from "../database/database"
+import { fetchNotesAsync, deleteNoteAsync, type NoteEntity } from "../../database/database"
 import type { StackNavigationProp } from "@react-navigation/stack"
-import type { RootStackParamList } from "../navigation/types"
+import type { RootStackParamList } from "../../navigation/types"
 import { SafeAreaView } from "react-native-safe-area-context"
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "NotesScreen">
