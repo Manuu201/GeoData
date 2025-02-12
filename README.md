@@ -2,18 +2,14 @@
 
 Este proyecto es una aplicación móvil desarrollada con React Native y Expo, que utiliza SQLite como base de datos local. Permite gestionar notas, fotos con ubicación y tablas dinámicas.
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```bash
-/my-app
+/src
 │── /assets              # Imágenes y recursos estáticos
 │── /components          # Componentes reutilizables
 │── /database            # Lógica de la base de datos SQLite
 │── /screens             # Pantallas principales de la app
-│   ├── HomeScreen.tsx         # Listado de tablas y CRUD
-│   ├── ProfileScreen.tsx      # CRUD de notas
-│   ├── SettingsScreen.tsx     # Gestión de fotos y mapa
-│   ├── TableEditorScreen.tsx  # Editor de tablas dinámicas
 │── /navigation          # Configuración de la navegación
 │── App.tsx              # Entrada principal de la app
 │── database.ts          # Archivo principal de la base de datos
@@ -25,7 +21,7 @@ Este proyecto es una aplicación móvil desarrollada con React Native y Expo, qu
 
 # Requisitos y Ejecución del Proyecto React Native con Expo y SQLite
 
-## 🚀 Requisitos para ejecutar el proyecto
+## Requisitos para ejecutar el proyecto
 
 - **Node.js** (versión recomendada: >= 16)
 - **Expo CLI** instalado globalmente:
@@ -43,10 +39,10 @@ Se crean y gestionan las siguientes tablas:
 
 # Funcionalidades Principales
 
-- **Gestión de notas** en `ProfileScreen.tsx`.
-- **Captura de fotos con ubicación** en `SettingsScreen.tsx`.
+- **Gestión de notas** en `NotesScreen.tsx`.
+- **Captura de fotos con ubicación** en `PhotosScreen.tsx`.
 - **Visualización de fotos en un mapa** con `react-native-maps`.
-- **Creación y edición de tablas dinámicas** en `HomeScreen.tsx` y `TableEditorScreen.tsx`.
+- **Creación y edición de tablas dinámicas** en `TablesScreen.tsx` y `TableEditorScreen.tsx`.
 - **Persistencia de datos** con SQLite.
 
 # Dependencias Clave
@@ -77,7 +73,7 @@ La carpeta `/assets` contiene imágenes y otros recursos estáticos utilizados e
 La lógica de la base de datos SQLite se encuentra en `/database/database.ts`.  
 Este archivo contiene las funciones para crear, leer, actualizar y eliminar datos en las tablas `notes`, `photos` y `tables`.
 
-## ▶️ Cómo ejecutar la aplicación
+## Cómo ejecutar la aplicación
 
 1. **Clonar el repositorio**
 
@@ -103,9 +99,4 @@ En un dispositivo físico: Escanea el código QR que aparece en la terminal con 
 ¡Listo! La aplicación se ejecutará en tu emulador o dispositivo físico.
 
 
-### Notas adicionales:
-- Asegúrate de tener **Node.js** instalado (versión recomendada >= 16).
-- Si es la primera vez que usas Expo, instala **Expo CLI** globalmente con:
-```sh
-npm install -g expo-cli
-```
+
