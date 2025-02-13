@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   ScrollView,
@@ -12,17 +12,8 @@ import { useSQLiteContext } from "expo-sqlite";
 import { updateTableAsync } from "../../database/database";
 import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  Text,
-  TextInput,
-  Card,
-  Snackbar,
-  FAB,
-  IconButton,
-  useTheme,
-  Button,
-} from "react-native-paper";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Button, Card, Icon, Input, Layout, Text, useTheme, Modal } from "@ui-kitten/components";
+import { EvaIconsPack } from '@ui-kitten/eva-icons';
 
 export default function TableEditorScreen() {
   const db = useSQLiteContext();
@@ -34,7 +25,7 @@ export default function TableEditorScreen() {
   const [name, setName] = useState(table.name);
   const [data, setData] = useState<string[][]>(table.data);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [isModified, setIsModified] = useState(false); // Detecta cambios
+  const [isModified, setIsModified] = useState(false);
 
   useEffect(() => {
     console.log("✏ Cargando datos de la tabla:", table);
@@ -81,7 +72,6 @@ export default function TableEditorScreen() {
     setTimeout(() => navigation.goBack(), 1500);
   }
 
-  // Preguntar al usuario si quiere salir sin guardar
   const handleGoBack = () => {
     if (isModified) {
       Alert.alert(
@@ -140,145 +130,95 @@ export default function TableEditorScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme['background-basic-color-1'] }]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollView}>
-          <Text style={[styles.title, { color: theme.colors.primary }]}>Editar Tabla</Text>
+          <Text category="h1" style={styles.title}>Editar Tabla</Text>
 
           <Card style={styles.card}>
-            <Card.Content>
-              <TextInput
-                label="Nombre de la tabla"
-                value={name}
-                onChangeText={(text) => {
-                  setName(text);
-                  setIsModified(true);
-                }}
-                mode="outlined"
-                style={styles.input}
-              />
-            </Card.Content>
+            <Input
+              label="Nombre de la tabla"
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+                setIsModified(true);
+              }}
+              style={styles.input}
+            />
           </Card>
 
           <Card style={styles.card}>
-            <Card.Content>
-              <ScrollView horizontal>
-                <View>
-                  {data.map((row, rowIndex) => (
-                    <View key={rowIndex} style={styles.row}>
-                      {row.map((cell, colIndex) => (
-                        <TextInput
-                          key={`${rowIndex}-${colIndex}`}
-                          mode="outlined"
-                          style={styles.cell}
-                          value={cell}
-                          onChangeText={(value) => handleCellChange(rowIndex, colIndex, value)}
-                        />
-                      ))}
-                      <IconButton
-                        icon="close"
-                        size={24}
-                        onPress={() => confirmRemoveRow(rowIndex)}
-                        style={styles.removeButton}
-                      />
-                    </View>
-                  ))}
-                  <View style={styles.row}>
-                    {data[0].map((_, colIndex) => (
-                      <IconButton
-                        key={colIndex}
-                        icon="close"
-                        size={24}
-                        onPress={() => confirmRemoveColumn(colIndex)}
-                        style={styles.removeButton}
+            <ScrollView horizontal>
+              <View>
+                {data.map((row, rowIndex) => (
+                  <View key={rowIndex} style={styles.row}>
+                    {row.map((cell, colIndex) => (
+                      <Input
+                        key={`${rowIndex}-${colIndex}`}
+                        style={styles.cell}
+                        value={cell}
+                        onChangeText={(value) => handleCellChange(rowIndex, colIndex, value)}
                       />
                     ))}
+                    <Button
+                      appearance="ghost"
+                      accessoryLeft={<Icon name="close-outline" />}
+                      onPress={() => confirmRemoveRow(rowIndex)}
+                      style={styles.removeButton}
+                    />
                   </View>
+                ))}
+                <View style={styles.row}>
+                  {data[0].map((_, colIndex) => (
+                    <Button
+                      key={colIndex}
+                      appearance="ghost"
+                      accessoryLeft={<Icon name="close-outline" />}
+                      onPress={() => confirmRemoveColumn(colIndex)}
+                      style={styles.removeButton}
+                    />
+                  ))}
                 </View>
-              </ScrollView>
-              <View style={styles.buttonContainer}>
-                <Button mode="contained" onPress={addRow} style={styles.addButton}>
-                  Agregar Fila
-                </Button>
-                <Button mode="contained" onPress={addColumn} style={styles.addButton}>
-                  Agregar Columna
-                </Button>
               </View>
-            </Card.Content>
+            </ScrollView>
+            <View style={styles.buttonContainer}>
+              <Button onPress={addRow} style={styles.addButton}>
+                Agregar Fila
+              </Button>
+              <Button onPress={addColumn} style={styles.addButton}>
+                Agregar Columna
+              </Button>
+            </View>
           </Card>
         </ScrollView>
 
-        <FAB
-          style={[styles.fab, { backgroundColor: theme.colors.primary }]}
-          icon={(props) => <Icon name="content-save" {...props} />}
+        <Button
+          style={styles.fab}
+          accessoryLeft={<Icon name="save-outline" />}
           onPress={handleSave}
         />
 
-        <Snackbar
-          visible={snackbarVisible}
-          onDismiss={() => setSnackbarVisible(false)}
-          duration={1500}
-          style={{ backgroundColor: theme.colors.primary }}
-        >
-          ✅ Tabla guardada correctamente.
-        </Snackbar>
+        <Modal visible={snackbarVisible} onBackdropPress={() => setSnackbarVisible(false)}>
+          <Card>
+            <Text>✅ Tabla guardada correctamente.</Text>
+          </Card>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-
-
-
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  scrollView: {
-    flexGrow: 1,
-    paddingBottom: 80,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  card: {
-    marginBottom: 16,
-  },
-  input: {
-    marginBottom: 8,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  cell: {
-    width: 120,
-    height: 50,
-    margin: 4,
-    textAlign: "center",
-  },
-  removeButton: {
-    marginLeft: 8,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 16,
-  },
-  addButton: {
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  fab: {
-    position: "absolute",
-    right: 16,
-    bottom: 16,
-  },
+  safeArea: { flex: 1 },
+  container: { flex: 1, padding: 16 },
+  scrollView: { flexGrow: 1, paddingBottom: 80 },
+  title: { textAlign: "center", marginBottom: 16 },
+  card: { marginBottom: 16 },
+  input: { marginBottom: 8 },
+  row: { flexDirection: "row", alignItems: "center" },
+  cell: { width: 120, height: 50, margin: 4 },
+  removeButton: { marginLeft: 8 },
+  buttonContainer: { flexDirection: "row", justifyContent: "space-around", marginTop: 16 },
+  addButton: { flex: 1, marginHorizontal: 4 },
+  fab: { position: "absolute", right: 16, bottom: 16 },
 });

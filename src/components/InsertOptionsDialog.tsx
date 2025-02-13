@@ -1,5 +1,6 @@
 import React from "react";
-import { Dialog, Button } from "react-native-paper";
+import { StyleSheet } from "react-native";
+import { Modal, Card, Button, Text, Icon } from "@ui-kitten/components";
 
 interface InsertOptionsDialogProps {
   visible: boolean;
@@ -15,29 +16,56 @@ export default function InsertOptionsDialog({
   onInsertTable,
 }: InsertOptionsDialogProps) {
   return (
-    <Dialog visible={visible} onDismiss={onDismiss}>
-      <Dialog.Title>Insertar en la nota</Dialog.Title>
-      <Dialog.Content>
+    <Modal
+      visible={visible}
+      backdropStyle={styles.backdrop}
+      onBackdropPress={onDismiss}
+    >
+      <Card disabled={true} style={styles.card}>
+        <Text category="h6" style={styles.title}>
+          Insertar en la nota
+        </Text>
         <Button
-          mode="outlined"
+          appearance="outline"
+          accessoryLeft={(props) => <Icon {...props} name="image-outline" />}
           onPress={onInsertImage}
-          style={{ margin: 8 }}
-          icon="image"
+          style={styles.button}
         >
           Agregar Imagen
         </Button>
         <Button
-          mode="outlined"
+          appearance="outline"
+          accessoryLeft={(props) => <Icon {...props} name="grid-outline" />}
           onPress={onInsertTable}
-          style={{ margin: 8 }}
-          icon="table"
+          style={styles.button}
         >
           Agregar Tabla
         </Button>
-      </Dialog.Content>
-      <Dialog.Actions>
-        <Button onPress={onDismiss}>Cerrar</Button>
-      </Dialog.Actions>
-    </Dialog>
+        <Button onPress={onDismiss} status="danger" style={styles.closeButton}>
+          Cerrar
+        </Button>
+      </Card>
+    </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  backdrop: {
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  card: {
+    padding: 20,
+    width: 300,
+    borderRadius: 10,
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  button: {
+    marginVertical: 5,
+  },
+  closeButton: {
+    marginTop: 10,
+  },
+});

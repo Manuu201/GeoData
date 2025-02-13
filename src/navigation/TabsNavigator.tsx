@@ -13,6 +13,7 @@ import NoteEditorScreen from "../screens/Notes/NoteEditorScreen"
 import ReportsScreen from "../screens/Reports/ReportsScreen"
 import OfflineMapScreen from "../components/OfflineMapScreen"
 import ReportsEditorScreen from "../screens/Reports/ReportsEditorScreen"
+import React from "react"
 
 const Tab = createBottomTabNavigator()
 const Stack = createStackNavigator()

@@ -1,60 +1,52 @@
-import { View, StyleSheet, ScrollView } from "react-native";
-import { Text, Card, Button, useTheme } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import React from 'react';
+import { ScrollView, StyleSheet } from 'react-native';
+import { Layout, Text, Card, Button, Icon, TopNavigation } from '@ui-kitten/components';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen({ navigation }) {
-  const theme = useTheme();
-
   const features = [
-    { name: "Tablas", icon: "table-large", screen: "Tablas", color: "#3498db" },
-    { name: "Fotos", icon: "image", screen: "Fotos", color: "#2ecc71" },
-    { name: "Notas", icon: "notebook", screen: "Notas", color: "#e74c3c" },
+    { name: "Tablas", icon: "file-text-outline", screen: "Tablas", color: "#3498db" },
+    { name: "Fotos", icon: "image-outline", screen: "Fotos", color: "#2ecc71" },
+    { name: "Notas", icon: "edit-2-outline", screen: "Notas", color: "#e74c3c" },
   ];
 
+  const renderFeatureCard = (feature, index) => (
+    <Card key={index} style={[styles.featureCard, { backgroundColor: feature.color }]}>
+      <Icon name={feature.icon} fill="#ffffff" style={styles.featureIcon} />
+      <Text category='h6' style={styles.featureTitle}>{feature.name}</Text>
+      <Button
+        appearance='filled'
+        onPress={() => navigation.navigate(feature.screen)}
+        style={styles.button}
+      >
+        Explorar
+      </Button>
+    </Card>
+  );
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollView}>
-
-        <View style={styles.header}>
-          <Icon name="earth" size={64} color={theme.colors.primary} />
-          <Text style={[styles.title, { color: theme.colors.primary }]}>GeoApp</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.onSurface }]}>
-            Tu asistente geológico de campo
-          </Text>
-        </View>
-
-        <View style={styles.featuresContainer}>
-          {features.map((feature, index) => (
-            <Card
-              key={index}
-              style={[styles.featureCard, { backgroundColor: feature.color }]}
-              mode="elevated"
-            >
-              <Card.Content style={styles.cardContent}>
-                <Icon name={feature.icon} size={56} color="#ffffff" />
-                <Text style={styles.featureTitle}>{feature.name}</Text>
-              </Card.Content>
-              <Card.Actions style={styles.cardActions}>
-                <Button
-                  mode="contained-tonal"
-                  onPress={() => navigation.navigate(feature.screen)}
-                  style={styles.button}
-                  labelStyle={styles.buttonLabel}
-                >
-                  Explorar
-                </Button>
-              </Card.Actions>
-            </Card>
-          ))}
-        </View>
-      </ScrollView>
+    <SafeAreaView style={{ flex: 1 }}>
+      <TopNavigation title='GeoApp' alignment='center' />
+      <Layout style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollView}>
+          <Layout style={styles.header}>
+            <Icon name='globe-2-outline' fill='#3366FF' style={styles.headerIcon} />
+            <Text category='h1' style={styles.title}>GeoApp</Text>
+            <Text category='s1' style={styles.subtitle}>
+              Tu asistente geológico de campo
+            </Text>
+          </Layout>
+          <Layout style={styles.featuresContainer}>
+            {features.map(renderFeatureCard)}
+          </Layout>
+        </ScrollView>
+      </Layout>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
   },
   scrollView: {
@@ -62,47 +54,43 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 24,
   },
+  headerIcon: {
+    width: 64,
+    height: 64,
+  },
   title: {
-    fontSize: 36,
-    fontWeight: "bold",
-    textAlign: "center",
+    textAlign: 'center',
+    marginVertical: 8,
   },
   subtitle: {
-    fontSize: 18,
-    textAlign: "center",
-    marginTop: 4,
+    textAlign: 'center',
     opacity: 0.8,
   },
   featuresContainer: {
-    gap: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   featureCard: {
-    borderRadius: 20,
-    elevation: 5,
+    width: '48%',
+    marginBottom: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    padding: 16,
   },
-  cardContent: {
-    alignItems: "center",
-    paddingVertical: 32,
+  featureIcon: {
+    width: 48,
+    height: 48,
+    marginBottom: 8,
   },
   featureTitle: {
-    fontSize: 22,
-    fontWeight: "600",
-    marginTop: 12,
-    color: "#ffffff",
-  },
-  cardActions: {
-    justifyContent: "center",
-    paddingBottom: 16,
+    color: '#ffffff',
+    marginBottom: 8,
   },
   button: {
     borderRadius: 20,
-    paddingHorizontal: 20,
-  },
-  buttonLabel: {
-    fontSize: 16,
-    fontWeight: "bold",
   },
 });

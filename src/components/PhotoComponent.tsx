@@ -1,6 +1,6 @@
 import React from "react";
-import { View, Image, StyleSheet, Text } from "react-native";
-import { Button } from "react-native-paper";
+import { View, Image, StyleSheet } from "react-native";
+import { Button, Card, Icon, Text } from "@ui-kitten/components";
 import { PhotoEntity } from "../database/database";
 
 interface PhotoComponentProps {
@@ -10,30 +10,59 @@ interface PhotoComponentProps {
 
 export default function PhotoComponent({ photo, onDelete }: PhotoComponentProps) {
   console.log("Photo data:", photo); // Verifica el contenido de la foto
+
   if (!photo || !photo.uri) {
-    return <Text>No photo available</Text>;
+    return (
+      <View style={styles.noPhotoContainer}>
+        <Icon name="alert-circle-outline" fill="#8F9BB3" style={styles.noPhotoIcon} />
+        <Text appearance="hint">No photo available</Text>
+      </View>
+    );
   }
+
   return (
-    <View style={styles.container}>
+    <Card style={styles.card}>
       <Image source={{ uri: photo.uri }} style={styles.image} />
-      <Button onPress={onDelete} style={styles.deleteButton}>
+      <Button
+        status="danger"
+        appearance="outline"
+        accessoryLeft={(props) => <Icon {...props} name="trash-2-outline" />}
+        onPress={onDelete}
+        style={styles.deleteButton}
+      >
         Eliminar
       </Button>
-    </View>
+    </Card>
   );
 }
 
-
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
+  card: {
+    marginVertical: 10,
+    padding: 10,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 3,
   },
   image: {
     width: "100%",
     height: 200,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   deleteButton: {
-    marginTop: 8,
+    marginTop: 10,
+    alignSelf: "center",
+  },
+  noPhotoContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  noPhotoIcon: {
+    width: 32,
+    height: 32,
+    marginBottom: 5,
   },
 });

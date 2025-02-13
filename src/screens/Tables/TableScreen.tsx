@@ -1,17 +1,15 @@
-import { useState, useCallback, memo } from "react";
+import React, { useState, useCallback, memo } from "react";
 import { FlatList, StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { TableEntity, fetchTablesAsync, addTableAsync, deleteTableAsync } from "../../database/database";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Card, Text, TextInput, Button, FAB, Dialog, Portal, useTheme, Snackbar, IconButton } from "react-native-paper";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import type { RootStackParamList } from "../../navigation/types"; // Asegúrate de importar el tipo correcto
+import { Card, Text, Input, Button, Icon, Layout, useTheme, Modal, Spinner } from "@ui-kitten/components";
+import type { RootStackParamList } from "../../navigation/types";
 
-const ITEMS_PER_PAGE = 5; // Cantidad de tablas por página
+const ITEMS_PER_PAGE = 5;
 
-// Memoized TextInput con tipado correcto
 interface MemoizedTextInputProps {
   label: string;
   value: string;
@@ -21,13 +19,13 @@ interface MemoizedTextInputProps {
 }
 
 const MemoizedTextInput = memo<MemoizedTextInputProps>(({ label, value, onChangeText, keyboardType = "default", error = false }) => (
-  <TextInput
+  <Input
     label={label}
     value={value}
     onChangeText={onChangeText}
     keyboardType={keyboardType}
-    error={error} // Cambia el estilo si hay un error
-    style={error ? styles.errorInput : undefined} // Aplica un estilo adicional si hay un error
+    status={error ? "danger" : "basic"}
+    style={styles.input}
   />
 ));
 
@@ -86,7 +84,6 @@ export default function TableScreen() {
     const rows = Number.parseInt(newTableRows, 10);
     const columns = Number.parseInt(newTableColumns, 10);
 
-    // Validaciones
     if (newTableName.trim() === "") {
       setErrorMessage({ field: "name", message: "El nombre de la tabla no puede estar vacío." });
       return;
@@ -104,7 +101,6 @@ export default function TableScreen() {
       return;
     }
 
-    // Si se seleccionó una plantilla, usar sus datos
     const template = selectedTemplate ? predefinedTemplates[selectedTemplate] : null;
     const data = template ? template.data : Array.from({ length: rows }, () => Array(columns).fill(""));
 
@@ -117,7 +113,7 @@ export default function TableScreen() {
     fetchTables();
     setSnackbarMessage("Tabla agregada exitosamente");
     setSnackbarVisible(true);
-    setErrorMessage(null); // Limpiar mensajes de error
+    setErrorMessage(null);
   }
 
   async function handleDeleteTable(id: number) {
@@ -130,30 +126,28 @@ export default function TableScreen() {
   const totalPages = Math.ceil(sortedTables.length / ITEMS_PER_PAGE);
   const currentTables = sortedTables.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
 
-  // Plantillas predefinidas
-  // Plantillas predefinidas
-const predefinedTemplates = {
-  "Roca Sedimentaria": {
-    rows: 5,
-    columns: 5,
-    data: [
-      ["Minerales", "Forma", "Tamaño", "Color", "Porcentaje"],
-      ["", "", "", "", ""],
-      ["", "", "", "", ""],
-      ["", "", "", "", ""],
-      ["", "", "", "", ""]
-    ]
-  },
-  "Roca Ígnea": {
-    rows: 3,
-    columns: 4,
-    data: [
-      ["", "Minerales", "Fósiles", "Cemento", "Matriz"], // Primera fila: títulos de columnas
-      ["Tipo", "", "", "", ""], // Segunda fila: Tipo
-      ["Porcentaje", "", "", "", ""] // Tercera fila: Porcentaje
-    ]
-  }
-};
+  const predefinedTemplates = {
+    "Roca Sedimentaria": {
+      rows: 5,
+      columns: 5,
+      data: [
+        ["Minerales", "Forma", "Tamaño", "Color", "Porcentaje"],
+        ["", "", "", "", ""],
+        ["", "", "", "", ""],
+        ["", "", "", "", ""],
+        ["", "", "", "", ""]
+      ]
+    },
+    "Roca Ígnea": {
+      rows: 3,
+      columns: 4,
+      data: [
+        ["", "Minerales", "Fósiles", "Cemento", "Matriz"],
+        ["Tipo", "", "", "", ""],
+        ["Porcentaje", "", "", "", ""]
+      ]
+    }
+  };
 
   const handleTemplateSelection = (templateName: keyof typeof predefinedTemplates) => {
     const template = predefinedTemplates[templateName];
@@ -161,21 +155,20 @@ const predefinedTemplates = {
     setNewTableRows(template.rows.toString());
     setNewTableColumns(template.columns.toString());
     setSelectedTemplate(templateName);
-    setErrorMessage(null); // Limpiar mensajes de error al seleccionar una plantilla
+    setErrorMessage(null);
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme['background-basic-color-1'] }]}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
-        <Text style={[styles.title, { color: theme.colors.primary }]}>Tablas Geológicas</Text>
+        <Text category="h1" style={styles.title}>Tablas Geológicas</Text>
 
-        {/* Botones de ordenamiento */}
         <View style={styles.sortContainer}>
-          <Button onPress={() => toggleSort("name")}>
-            Ordenar por Nombre {sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+          <Button appearance="ghost" onPress={() => toggleSort("name")}>
+            {`Ordenar por Nombre ${sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
           </Button>
-          <Button onPress={() => toggleSort("date")}>
-            Ordenar por Fecha {sortBy === "date" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
+          <Button appearance="ghost" onPress={() => toggleSort("date")}>
+            {`Ordenar por Fecha ${sortBy === "date" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
           </Button>
         </View>
 
@@ -188,42 +181,39 @@ const predefinedTemplates = {
               style={styles.tableCard}
               onPress={() => navigation.navigate("TableEditorScreen", { table: item, onSave: fetchTables })}
             >
-              <Card.Content>
-                <Text style={styles.tableName}>{item.name}</Text>
-                <Text style={styles.tableInfo}>
+              <View>
+                <Text category="h6" style={styles.tableName}>{item.name}</Text>
+                <Text category="s1" style={styles.tableInfo}>
                   {item.rows} Filas | {item.columns} Columnas
                 </Text>
-              </Card.Content>
-              <Card.Actions>
-                <Button onPress={() => navigation.navigate("TableEditorScreen", { table: item, onSave: fetchTables })}>
+              </View>
+              <View style={styles.cardActions}>
+                <Button appearance="outline" onPress={() => navigation.navigate("TableEditorScreen", { table: item, onSave: fetchTables })}>
                   Editar
                 </Button>
-                <Button onPress={() => handleDeleteTable(item.id)} textColor={theme.colors.error}>
+                <Button appearance="outline" status="danger" onPress={() => handleDeleteTable(item.id)}>
                   Eliminar
                 </Button>
-              </Card.Actions>
+              </View>
             </Card>
           )}
         />
 
-        {/* Paginación */}
         <View style={styles.pagination}>
-          <IconButton icon="chevron-left" disabled={page === 0} onPress={() => setPage(page - 1)} />
+          <Button appearance="ghost" disabled={page === 0} onPress={() => setPage(page - 1)} accessoryLeft={<Icon name="chevron-left" />} />
           <Text>{page + 1} / {totalPages || 1}</Text>
-          <IconButton icon="chevron-right" disabled={page >= totalPages - 1} onPress={() => setPage(page + 1)} />
+          <Button appearance="ghost" disabled={page >= totalPages - 1} onPress={() => setPage(page + 1)} accessoryLeft={<Icon name="chevron-right" />} />
         </View>
 
-        {/* Diálogo para agregar tabla */}
-        <Portal>
-          <Dialog visible={isDialogVisible} onDismiss={() => setIsDialogVisible(false)}>
-            <Dialog.Title>Agregar Tabla</Dialog.Title>
-            <Dialog.Content>
-              {/* Selección de plantillas */}
+        <Modal visible={isDialogVisible} onBackdropPress={() => setIsDialogVisible(false)}>
+          <Card>
+            <View>
+              <Text category="h6">Agregar Tabla</Text>
               <View style={styles.templateButtons}>
-                <Button onPress={() => handleTemplateSelection("Roca Sedimentaria")}>
+                <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Sedimentaria")}>
                   Usar Plantilla: Roca Sedimentaria
                 </Button>
-                <Button onPress={() => handleTemplateSelection("Roca Ígnea")}>
+                <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Ígnea")}>
                   Usar Plantilla: Roca Ígnea
                 </Button>
               </View>
@@ -234,7 +224,7 @@ const predefinedTemplates = {
                 onChangeText={setNewTableName}
                 error={errorMessage?.field === "name"}
               />
-              {errorMessage?.field === "name" && <Text style={styles.errorText}>{errorMessage.message}</Text>}
+              {errorMessage?.field === "name" && <Text status="danger" style={styles.errorText}>{errorMessage.message}</Text>}
 
               <MemoizedTextInput
                 label="Filas"
@@ -243,7 +233,7 @@ const predefinedTemplates = {
                 keyboardType="numeric"
                 error={errorMessage?.field === "rows"}
               />
-              {errorMessage?.field === "rows" && <Text style={styles.errorText}>{errorMessage.message}</Text>}
+              {errorMessage?.field === "rows" && <Text status="danger" style={styles.errorText}>{errorMessage.message}</Text>}
 
               <MemoizedTextInput
                 label="Columnas"
@@ -252,17 +242,16 @@ const predefinedTemplates = {
                 keyboardType="numeric"
                 error={errorMessage?.field === "columns"}
               />
-              {errorMessage?.field === "columns" && <Text style={styles.errorText}>{errorMessage.message}</Text>}
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={() => setIsDialogVisible(false)}>Cancelar</Button>
+              {errorMessage?.field === "columns" && <Text status="danger" style={styles.errorText}>{errorMessage.message}</Text>}
+            </View>
+            <View style={styles.cardActions}>
+              <Button appearance="ghost" onPress={() => setIsDialogVisible(false)}>Cancelar</Button>
               <Button onPress={handleAddTable}>Agregar</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
+            </View>
+          </Card>
+        </Modal>
 
-        <FAB style={styles.fab} icon="plus" onPress={() => setIsDialogVisible(true)} />
-        <Snackbar visible={snackbarVisible} onDismiss={() => setSnackbarVisible(false)}>{snackbarMessage}</Snackbar>
+        <Button style={styles.fab} accessoryLeft={<Icon name="plus" />} onPress={() => setIsDialogVisible(true)} />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -271,15 +260,16 @@ const predefinedTemplates = {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, padding: 16 },
-  title: { fontSize: 24, fontWeight: "bold", textAlign: "center", marginBottom: 16 },
+  title: { textAlign: "center", marginBottom: 16 },
   sortContainer: { flexDirection: "row", justifyContent: "space-around", marginBottom: 10 },
   list: { paddingBottom: 16 },
   tableCard: { marginBottom: 12 },
-  tableName: { fontSize: 18, fontWeight: "bold" },
-  tableInfo: { fontSize: 14, color: "gray" },
+  tableName: { marginBottom: 4 },
+  tableInfo: { color: "gray" },
   pagination: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 10 },
   fab: { position: "absolute", right: 16, bottom: 16 },
   templateButtons: { flexDirection: "column", marginBottom: 10 },
-  errorInput: { borderColor: "red", borderWidth: 1 }, // Estilo para resaltar errores
-  errorText: { color: "red", fontSize: 12, marginTop: 4 }, // Estilo para mensajes de error
+  input: { marginBottom: 10 },
+  errorText: { marginTop: 4 },
+  cardActions: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
 });

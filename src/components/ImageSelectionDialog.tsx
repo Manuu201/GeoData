@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Dialog, Button, Card, useTheme, TextInput, Menu } from "react-native-paper";
-import { FlatList, Image, StyleSheet, Text } from "react-native";
+import { IndexPath, Select, SelectItem } from "@ui-kitten/components";
+import { Modal, Button, Card, Input, Layout, Text } from "@ui-kitten/components";
+import { FlatList, Image, StyleSheet } from "react-native";
 import { PhotoEntity } from "../database/database";
 
 interface ImageSelectionDialogProps {
@@ -16,10 +17,12 @@ export default function ImageSelectionDialog({
   photos,
   onSelectImage,
 }: ImageSelectionDialogProps) {
-  const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("id");
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(new IndexPath(0));
+  
+  // Mapear opciones de ordenamiento
+  const sortOptions = ["ID", "Fecha"];
+  const sortBy = sortOptions[selectedIndex.row]; 
 
   // Filtrar y ordenar fotos
   const filteredPhotos = photos
@@ -27,63 +30,65 @@ export default function ImageSelectionDialog({
       photo.id.toString().includes(searchQuery.toLowerCase()) // Buscar por ID
     )
     .sort((a, b) => {
-      if (sortBy === "id") return a.id - b.id;
-      if (sortBy === "date") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (sortBy === "ID") return a.id - b.id;
+      if (sortBy === "Fecha") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return 0;
     });
 
   return (
-    <Dialog visible={visible} onDismiss={onDismiss}>
-      <Dialog.Title>Seleccionar Imagen</Dialog.Title>
-      <Dialog.Content>
-        <TextInput
-          label="Buscar por ID"
+    <Modal visible={visible} backdropStyle={styles.backdrop} onBackdropPress={onDismiss}>
+      <Card disabled>
+        <Text category="h5" style={styles.title}>Seleccionar Imagen</Text>
+        
+        {/* Campo de búsqueda */}
+        <Input
+          placeholder="Buscar por ID"
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={styles.searchInput}
         />
-        <Menu
-          visible={menuVisible}
-          onDismiss={() => setMenuVisible(false)}
-          anchor={
-            <Button onPress={() => setMenuVisible(true)}>
-              Ordenar por: {sortBy === "id" ? "ID" : "Fecha"}
-            </Button>
-          }
+
+        {/* Selector de ordenamiento */}
+        <Select
+          selectedIndex={selectedIndex}
+          onSelect={(index) => setSelectedIndex(index as IndexPath)}
+          style={styles.select}
+          placeholder="Ordenar por"
         >
-          <Menu.Item onPress={() => { setSortBy("id"); setMenuVisible(false); }} title="ID" />
-          <Menu.Item onPress={() => { setSortBy("date"); setMenuVisible(false); }} title="Fecha" />
-        </Menu>
+          {sortOptions.map((title, index) => (
+            <SelectItem key={index} title={title} />
+          ))}
+        </Select>
+
+        {/* Lista de imágenes */}
         <FlatList
           data={filteredPhotos}
           renderItem={({ item }) => (
             <Card style={styles.card} onPress={() => onSelectImage(item)}>
-              <Card.Content>
-                <Image source={{ uri: item.uri }} style={styles.image} />
-                <Text style={[styles.label, { color: theme.colors.onSurface }]}>
-                  {`ID: ${item.id}`}
-                </Text>
-                <Text style={[styles.date, { color: theme.colors.onSurface }]}>
-                  {`Fecha: ${new Date(item.created_at).toLocaleDateString()}`}
-                </Text>
-              </Card.Content>
+              <Image source={{ uri: item.uri }} style={styles.image} />
+              <Text style={styles.label}>{`ID: ${item.id}`}</Text>
+              <Text style={styles.date}>{`Fecha: ${new Date(item.created_at).toLocaleDateString()}`}</Text>
             </Card>
           )}
           keyExtractor={(item) => `photo-${item.id}`}
           numColumns={2}
         />
-      </Dialog.Content>
-      <Dialog.Actions>
-        <Button onPress={onDismiss}>Cerrar</Button>
-      </Dialog.Actions>
-    </Dialog>
+
+        {/* Botón para cerrar */}
+        <Button style={styles.closeButton} onPress={onDismiss}>Cerrar</Button>
+      </Card>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { margin: 8 },
-  image: { width: 100, height: 100, borderRadius: 8 },
-  label: { textAlign: "center", marginTop: 8, fontWeight: "bold" },
-  date: { textAlign: "center", marginTop: 4, fontSize: 12 },
+  backdrop: { backgroundColor: "rgba(0, 0, 0, 0.5)" },
+  title: { textAlign: "center", marginBottom: 16 },
   searchInput: { marginBottom: 16 },
+  select: { marginBottom: 16 },
+  card: { margin: 8, padding: 10, alignItems: "center" },
+  image: { width: 100, height: 100, borderRadius: 8 },
+  label: { marginTop: 8, fontWeight: "bold" },
+  date: { marginTop: 4, fontSize: 12 },
+  closeButton: { marginTop: 16 },
 });

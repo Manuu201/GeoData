@@ -1,110 +1,84 @@
-import { useState, useCallback } from "react";
-import { FlatList, StyleSheet, Image, View } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import * as Location from "expo-location";
-import { useSQLiteContext } from "expo-sqlite";
-import { addPhotoAsync, fetchPhotosAsync, deletePhotoAsync, type PhotoEntity } from "../../database/database";
-import { Linking } from "react-native";
-import { Card, FAB, Text, Button, Dialog, Portal, useTheme, Snackbar, IconButton, Menu } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
-import React from "react";
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useNavigation } from "@react-navigation/native";
-import { Platform } from "react-native";
+import { useState, useCallback } from "react"
+import { FlatList, StyleSheet, Image, Platform, Linking } from "react-native"
+import * as ImagePicker from "expo-image-picker"
+import * as Location from "expo-location"
+import { useSQLiteContext } from "expo-sqlite"
+import { addPhotoAsync, deletePhotoAsync, type PhotoEntity } from "../../database/database"
+import { useNavigation, useFocusEffect } from "@react-navigation/native"
+import { Layout, Button, Card, Icon, Text, Modal, Spinner, Input, TopNavigation } from "@ui-kitten/components"
+import { SafeAreaView } from "react-native-safe-area-context"
+import React from "react"
+
 export default function PhotosScreen() {
-  const navigation = useNavigation();
-  const db = useSQLiteContext();
-  const [photos, setPhotos] = useState<PhotoEntity[]>([]);
-  const [selectedPhoto, setSelectedPhoto] = useState<PhotoEntity | null>(null);
-  const [isDialogVisible, setIsDialogVisible] = useState(false);
-  const theme = useTheme();
-  const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 5;
+  const navigation = useNavigation()
+  const db = useSQLiteContext()
+  const [photos, setPhotos] = useState<PhotoEntity[]>([])
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoEntity | null>(null)
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [startDate, setStartDate] = useState<string>("")
+  const [endDate, setEndDate] = useState<string>("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const itemsPerPage = 5
 
   useFocusEffect(
     useCallback(() => {
-      loadPhotos();
-    }, [startDate, endDate, currentPage])
-  );
-
-  const openMenu = () => setIsMenuVisible(true);
-  const closeMenu = () => setIsMenuVisible(false);
-
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) {
-      if (!startDate) {
-        setStartDate(selectedDate);
-      } else {
-        setEndDate(selectedDate);
-      }
-    }
-  };
-
-  const clearFilters = () => {
-    setStartDate(null);
-    setEndDate(null);
-    setCurrentPage(1);
-  };
+      loadPhotos()
+    }, []),
+  )
 
   async function loadPhotos() {
-    let query = 'SELECT * FROM photos WHERE 1=1';
+    setIsLoading(true)
+    let query = "SELECT * FROM photos WHERE 1=1"
     if (startDate) {
-      query += ` AND DATE(created_at) >= '${startDate.toISOString().split('T')[0]}'`;
+      query += ` AND DATE(created_at) >= '${startDate}'`
     }
     if (endDate) {
-      query += ` AND DATE(created_at) <= '${endDate.toISOString().split('T')[0]}'`;
+      query += ` AND DATE(created_at) <= '${endDate}'`
     }
-    query += ` LIMIT ${itemsPerPage} OFFSET ${(currentPage - 1) * itemsPerPage}`;
+    query += ` LIMIT ${itemsPerPage} OFFSET ${(currentPage - 1) * itemsPerPage}`
 
-    const filteredPhotos = await db.getAllAsync<PhotoEntity>(query);
-    setPhotos(filteredPhotos);
+    const filteredPhotos = await db.getAllAsync<PhotoEntity>(query)
+    setPhotos(filteredPhotos)
 
-    const countQuery = 'SELECT COUNT(*) as total FROM photos WHERE 1=1';
-    const totalCount = await db.getFirstAsync<{ total: number }>(countQuery);
-    setTotalPages(Math.ceil(totalCount.total / itemsPerPage));
+    const countQuery = "SELECT COUNT(*) as total FROM photos WHERE 1=1"
+    const totalCount = await db.getFirstAsync<{ total: number }>(countQuery)
+    setTotalPages(Math.ceil(totalCount.total / itemsPerPage))
+
+    setIsLoading(false)
   }
 
   async function takePhoto() {
-    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync()
     if (cameraStatus !== "granted") {
-      alert("Se necesita permiso para usar la cámara");
-      return;
+      alert("Se necesita permiso para usar la cámara")
+      return
     }
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
-    });
+    })
 
     if (!result.canceled) {
-      const uri = result.assets[0].uri;
+      const uri = result.assets[0].uri
 
-      const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
+      const { status: locationStatus } = await Location.requestForegroundPermissionsAsync()
       if (locationStatus !== "granted") {
-        alert("Se necesita permiso de ubicación para guardar la foto");
-        return;
+        alert("Se necesita permiso de ubicación para guardar la foto")
+        return
       }
 
       try {
-        const location = await Location.getCurrentPositionAsync({});
-        const { latitude, longitude } = location.coords;
+        const location = await Location.getCurrentPositionAsync({})
+        const { latitude, longitude } = location.coords
 
-        await addPhotoAsync(db, uri, latitude, longitude);
-        loadPhotos();
-        setSnackbarMessage("Foto guardada exitosamente");
-        setSnackbarVisible(true);
+        await addPhotoAsync(db, uri, latitude, longitude)
+        loadPhotos()
       } catch (error) {
-        alert("No se pudo obtener la ubicación");
+        alert("No se pudo obtener la ubicación")
       }
     }
   }
@@ -113,162 +87,195 @@ export default function PhotosScreen() {
     const url =
       Platform.OS === "ios"
         ? `https://maps.apple.com/?q=${latitude},${longitude}`
-        : `geo:${latitude},${longitude}?q=${latitude},${longitude}`;
-    Linking.openURL(url);
+        : `geo:${latitude},${longitude}?q=${latitude},${longitude}`
+    Linking.openURL(url)
   }
 
   async function deletePhoto(id: number) {
-    await deletePhotoAsync(db, id);
-    loadPhotos();
-    setSelectedPhoto(null);
-    setIsDialogVisible(false);
-    setSnackbarMessage("Foto eliminada exitosamente");
-    setSnackbarVisible(true);
+    await deletePhotoAsync(db, id)
+    loadPhotos()
+    setSelectedPhoto(null)
+    setIsModalVisible(false)
   }
 
+  const renderPhotoItem = ({ item }: { item: PhotoEntity }) => (
+    <Card
+      style={styles.card}
+      onPress={() => {
+        setSelectedPhoto(item)
+        setIsModalVisible(true)
+      }}
+    >
+      <Image source={{ uri: item.uri }} style={styles.image} />
+    </Card>
+  )
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.filterContainer}>
-        <Text style={[styles.title, { color: theme.colors.primary }]}>Fotos Geológicas</Text>
-        <Menu
-          visible={isMenuVisible}
-          onDismiss={closeMenu}
-          anchor={
-            <IconButton
-              icon="filter"
-              onPress={openMenu}
-              iconColor={theme.colors.primary}
+    <SafeAreaView style={{ flex: 1 }}>
+      <TopNavigation title="Fotos Geológicas" alignment="center" />
+      <Layout style={styles.container} level="1">
+        <Layout style={styles.filterContainer} level="1">
+          <Input
+            placeholder="Fecha inicio (YYYY-MM-DD)"
+            value={startDate}
+            onChangeText={setStartDate}
+            style={styles.dateInput}
+          />
+          <Input
+            placeholder="Fecha fin (YYYY-MM-DD)"
+            value={endDate}
+            onChangeText={setEndDate}
+            style={styles.dateInput}
+          />
+          <Button onPress={loadPhotos}>Filtrar</Button>
+        </Layout>
+
+        {isLoading ? (
+          <Layout style={styles.spinnerContainer}>
+            <Spinner size="large" />
+          </Layout>
+        ) : (
+          <>
+            {photos.length === 0 ? (
+              <Layout style={styles.emptyContainer}>
+                <Text category="s1">Aún no tienes fotos. ¡Toma una nueva!</Text>
+              </Layout>
+            ) : (
+              <FlatList
+                data={photos}
+                renderItem={renderPhotoItem}
+                keyExtractor={(item) => item.id.toString()}
+                numColumns={2}
+                contentContainerStyle={styles.photoList}
+              />
+            )}
+
+            <Layout style={styles.paginationContainer} level="1">
+              <Button
+                onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                style={styles.paginationButton}
+              >
+                Anterior
+              </Button>
+              <Text>{`Página ${currentPage} de ${totalPages}`}</Text>
+              <Button
+                onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                style={styles.paginationButton}
+              >
+                Siguiente
+              </Button>
+            </Layout>
+
+            <Button
+              style={styles.fab}
+              accessoryLeft={(props) => <Icon {...props} name="camera-outline" />}
+              onPress={takePhoto}
             />
-          }
+          </>
+        )}
+
+        <Modal
+          visible={isModalVisible}
+          backdropStyle={styles.backdrop}
+          onBackdropPress={() => setIsModalVisible(false)}
         >
-          <Menu.Item onPress={() => setShowDatePicker(true)} title="Seleccionar Fecha Inicio" />
-          <Menu.Item onPress={() => setShowDatePicker(true)} title="Seleccionar Fecha Fin" />
-          <Menu.Item onPress={clearFilters} title="Limpiar Filtros" />
-        </Menu>
-      </View>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={new Date()}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
-      )}
-
-      {photos.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Aún no tienes fotos. ¡Toma una nueva!</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={photos}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={2}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <Card
-              style={styles.card}
-              onPress={() => {
-                setSelectedPhoto(item);
-                setIsDialogVisible(true);
-              }}
-            >
-              <Card.Cover source={{ uri: item.uri }} style={styles.image} />
-            </Card>
-          )}
-        />
-      )}
-
-      <View style={styles.paginationContainer}>
-        <Button onPress={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
-          Anterior
-        </Button>
-        <Text>{`Página ${currentPage} de ${totalPages}`}</Text>
-        <Button onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>
-          Siguiente
-        </Button>
-      </View>
-
-      <Portal>
-        <Dialog visible={isDialogVisible} onDismiss={() => setIsDialogVisible(false)}>
           {selectedPhoto && (
-            <>
-              <Dialog.Title>Detalles de la Foto</Dialog.Title>
-              <Dialog.Content>
-                <Image source={{ uri: selectedPhoto.uri }} style={styles.dialogImage} />
-                <Text style={styles.coordinates}>
-                  Lat: {selectedPhoto.latitude.toFixed(6)}, Lon: {selectedPhoto.longitude.toFixed(6)}
-                </Text>
-              </Dialog.Content>
-              <Dialog.Actions>
-                <Button onPress={() => setIsDialogVisible(false)}>Cerrar</Button>
+            <Card disabled>
+              <Text category="h6" style={styles.modalTitle}>
+                Detalles de la Foto
+              </Text>
+              <Image source={{ uri: selectedPhoto.uri }} style={styles.modalImage} />
+              <Text
+                style={styles.modalText}
+              >{`Lat: ${selectedPhoto.latitude.toFixed(6)}, Lon: ${selectedPhoto.longitude.toFixed(6)}`}</Text>
+              <Layout style={styles.modalActions}>
+                <Button onPress={() => setIsModalVisible(false)}>Cerrar</Button>
                 <Button onPress={() => openInMaps(selectedPhoto.latitude, selectedPhoto.longitude)}>Ver en Mapa</Button>
-                <Button onPress={() => deletePhoto(selectedPhoto.id)} textColor={theme.colors.error}>
+                <Button status="danger" onPress={() => deletePhoto(selectedPhoto.id)}>
                   Eliminar
                 </Button>
-                <Button
-                    mode="contained"
-                    onPress={() => navigation.navigate("OfflineMapScreen")}
-                    style={{ margin: 10 }}
-                  >
-                    Ver Mapa Offline
-                  </Button>
-
-
-              </Dialog.Actions>
-            </>
+              </Layout>
+            </Card>
           )}
-        </Dialog>
-      </Portal>
-
-      <FAB style={[styles.fab, { backgroundColor: theme.colors.primary }]} icon="camera" onPress={takePhoto} />
-
-      <Snackbar
-        visible={snackbarVisible}
-        onDismiss={() => setSnackbarVisible(false)}
-        duration={3000}
-        style={styles.snackbar}
-      >
-        {snackbarMessage}
-      </Snackbar>
+        </Modal>
+      </Layout>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  title: { fontSize: 28, fontWeight: "bold", marginVertical: 16, textAlign: "center" },
-  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  emptyText: { fontSize: 18, color: "#666", textAlign: "center" },
-  list: { padding: 8 },
-  card: { flex: 1, margin: 8, borderRadius: 12, elevation: 4 },
-  image: { 
-    height: 150, 
-    borderRadius: 12, 
-    resizeMode: 'contain' // Asegura que la imagen se vea bien dentro del Card 
+  container: {
+    flex: 1,
+    padding: 16,
   },
-  dialogImage: { 
-    width: "100%", 
-    height: 200, 
-    borderRadius: 12, 
-    marginBottom: 16, 
-    resizeMode: 'contain' // Evita que la imagen se recorte 
-  },
-  coordinates: { textAlign: "center", marginTop: 8 },
-  fab: { position: "absolute", right: 16, bottom: 16 },
-  snackbar: { position: "absolute", bottom: 60 },
   filterContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  dateInput: {
+    flex: 1,
+    marginRight: 8,
+  },
+  spinnerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  photoList: {
+    paddingBottom: 80,
+  },
+  card: {
+    flex: 1,
+    margin: 8,
+  },
+  image: {
+    height: 150,
+    borderRadius: 8,
   },
   paginationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginVertical: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 16,
   },
-});
+  paginationButton: {
+    minWidth: 80,
+  },
+  fab: {
+    position: "absolute",
+    right: 16,
+    bottom: 16,
+    borderRadius: 28,
+  },
+  backdrop: {
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalTitle: {
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  modalImage: {
+    width: 250,
+    height: 250,
+    borderRadius: 8,
+    marginBottom: 16,
+    alignSelf: "center",
+  },
+  modalText: {
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+})
+

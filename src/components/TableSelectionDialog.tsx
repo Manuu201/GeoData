@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Dialog, Button, Card, useTheme, TextInput, Menu } from "react-native-paper";
-import { FlatList, StyleSheet, Text } from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
+import { Button, Card, Input, Layout, Modal, Text, Icon, Select, SelectItem, IndexPath } from "@ui-kitten/components";
 import { TableEntity } from "../database/database";
 
 interface TableSelectionDialogProps {
@@ -16,78 +16,105 @@ export default function TableSelectionDialog({
   tables,
   onSelectTable,
 }: TableSelectionDialogProps) {
-  const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("id");
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedSortIndex, setSelectedSortIndex] = useState(new IndexPath(0));
+
+  const sortOptions = ["ID", "Nombre", "Fecha"];
+  const sortBy = sortOptions[selectedSortIndex.row];
 
   // Filtrar y ordenar tablas
   const filteredTables = tables
     .filter((table) =>
-      table.name.toLowerCase().includes(searchQuery.toLowerCase()) // Buscar por nombre
+      table.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
-      if (sortBy === "id") return a.id - b.id;
-      if (sortBy === "name") return a.name.localeCompare(b.name);
-      if (sortBy === "date") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (sortBy === "ID") return a.id - b.id;
+      if (sortBy === "Nombre") return a.name.localeCompare(b.name);
+      if (sortBy === "Fecha") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return 0;
     });
 
   return (
-    <Dialog visible={visible} onDismiss={onDismiss}>
-      <Dialog.Title>Seleccionar Tabla</Dialog.Title>
-      <Dialog.Content>
-        <TextInput
-          label="Buscar por nombre"
+    <Modal
+      visible={visible}
+      backdropStyle={styles.backdrop}
+      onBackdropPress={onDismiss}
+    >
+      <Card disabled={true} style={styles.dialog}>
+        <Text category="h5" style={styles.title}>
+          Seleccionar Tabla
+        </Text>
+        <Input
+          placeholder="Buscar por nombre..."
           value={searchQuery}
           onChangeText={setSearchQuery}
+          accessoryLeft={(props) => <Icon {...props} name="search-outline" />}
           style={styles.searchInput}
         />
-        <Menu
-          visible={menuVisible}
-          onDismiss={() => setMenuVisible(false)}
-          anchor={
-            <Button onPress={() => setMenuVisible(true)}>
-              Ordenar por: {sortBy === "id" ? "ID" : sortBy === "name" ? "Nombre" : "Fecha"}
-            </Button>
-          }
+        <Select
+          selectedIndex={selectedSortIndex}
+          onSelect={(index) => setSelectedSortIndex(index as IndexPath)}
+          style={styles.select}
+          value={`Ordenar por: ${sortBy}`}
         >
-          <Menu.Item onPress={() => { setSortBy("id"); setMenuVisible(false); }} title="ID" />
-          <Menu.Item onPress={() => { setSortBy("name"); setMenuVisible(false); }} title="Nombre" />
-          <Menu.Item onPress={() => { setSortBy("date"); setMenuVisible(false); }} title="Fecha" />
-        </Menu>
+          {sortOptions.map((option, index) => (
+            <SelectItem key={index} title={option} />
+          ))}
+        </Select>
         <FlatList
           data={filteredTables}
           renderItem={({ item }) => (
-            <Card style={styles.card} onPress={() => onSelectTable(item)}>
-              <Card.Content>
-                <Text style={[styles.label, { color: theme.colors.onSurface }]}>
-                  {`${item.name}`}
-                </Text>
-                <Text style={[styles.details, { color: theme.colors.onSurface }]}>
-                  {`Filas: ${item.rows}, Columnas: ${item.columns}`}
-                </Text>
-                <Text style={[styles.date, { color: theme.colors.onSurface }]}>
-                  {`Creada el: ${new Date(item.created_at).toLocaleDateString()}`}
-                </Text>
-              </Card.Content>
+            <Card
+              style={styles.card}
+              onPress={() => onSelectTable(item)}
+              status="basic"
+            >
+              <Text category="s1">{item.name}</Text>
+              <Text appearance="hint">{`Filas: ${item.rows}, Columnas: ${item.columns}`}</Text>
+              <Text appearance="hint">{`Creada el: ${new Date(item.created_at).toLocaleDateString()}`}</Text>
             </Card>
           )}
           keyExtractor={(item) => `table-${item.id}`}
           numColumns={2}
         />
-      </Dialog.Content>
-      <Dialog.Actions>
-        <Button onPress={onDismiss}>Cerrar</Button>
-      </Dialog.Actions>
-    </Dialog>
+        <Button onPress={onDismiss} style={styles.closeButton} status="danger">
+          Cerrar
+        </Button>
+      </Card>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { margin: 8 },
-  label: { fontSize: 16, fontWeight: "bold", marginBottom: 4 },
-  details: { fontSize: 14, marginBottom: 4 },
-  date: { fontSize: 12, color: "#666" },
-  searchInput: { marginBottom: 16 },
+  backdrop: {
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  dialog: {
+    width: "90%",
+    padding: 20,
+    borderRadius: 10,
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  searchInput: {
+    marginBottom: 10,
+  },
+  select: {
+    marginBottom: 10,
+  },
+  card: {
+    flex: 1,
+    margin: 8,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: "#F7F9FC",
+    elevation: 3,
+  },
+  closeButton: {
+    marginTop: 10,
+    alignSelf: "center",
+    width: "100%",
+  },
 });

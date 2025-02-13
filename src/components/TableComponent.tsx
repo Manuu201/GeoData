@@ -1,22 +1,30 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { Button } from "react-native-paper";
+import { View, StyleSheet } from "react-native";
+import { Button, Card, Icon, Text } from "@ui-kitten/components";
 import { TableEntity } from "../database/database";
 
 interface TableComponentProps {
-  table: TableEntity | undefined; // Aceptar `undefined`
+  table: TableEntity | undefined;
   onDelete: () => void;
 }
 
 export default function TableComponent({ table, onDelete }: TableComponentProps) {
-  console.log("Table data:", table); // Verifica el contenido de la tabla
+  console.log("Table data:", table);
+
   if (!table) {
-    return <Text>No se ha cargado la tabla.</Text>;
+    return (
+      <View style={styles.noTableContainer}>
+        <Icon name="alert-circle-outline" fill="#8F9BB3" style={styles.noTableIcon} />
+        <Text appearance="hint">No se ha cargado la tabla.</Text>
+      </View>
+    );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{table.name}</Text>
+    <Card style={styles.card}>
+      <Text category="h6" style={styles.title}>
+        {table.name}
+      </Text>
       <View style={styles.table}>
         {table.data.map((row, rowIndex) => (
           <View key={rowIndex} style={styles.row}>
@@ -28,37 +36,64 @@ export default function TableComponent({ table, onDelete }: TableComponentProps)
           </View>
         ))}
       </View>
-      <Button onPress={onDelete} style={styles.deleteButton}>
+      <Button
+        status="danger"
+        appearance="outline"
+        accessoryLeft={(props) => <Icon {...props} name="trash-2-outline" />}
+        onPress={onDelete}
+        style={styles.deleteButton}
+      >
         Eliminar
       </Button>
-    </View>
+    </Card>
   );
 }
 
-
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
+  card: {
+    marginVertical: 10,
+    padding: 15,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 3,
   },
   title: {
-    fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 8,
+    marginBottom: 10,
+    textAlign: "center",
   },
   table: {
+    borderRadius: 8,
+    overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#E4E9F2",
+    backgroundColor: "#F7F9FC",
   },
   row: {
     flexDirection: "row",
+    backgroundColor: "#FFFFFF",
   },
   cell: {
     flex: 1,
-    padding: 8,
+    padding: 10,
+    textAlign: "center",
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#E4E9F2",
   },
   deleteButton: {
-    marginTop: 8,
+    marginTop: 15,
+    alignSelf: "center",
+  },
+  noTableContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  noTableIcon: {
+    width: 32,
+    height: 32,
+    marginBottom: 5,
   },
 });

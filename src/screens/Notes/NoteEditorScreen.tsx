@@ -45,8 +45,8 @@ export default function NoteEditorScreen() {
   const { note = { id: 0, title: "", content: "", photos: [], tables: [] } } = route.params || {};
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
-  const [photos, setPhotos] = useState<PhotoEntity[]>(Array.isArray(note.photos) ? note.photos : []);
-  const [tables, setTables] = useState<TableEntity[]>(Array.isArray(note.tables) ? note.tables : []);
+  const [photos, setPhotos] = useState<PhotoEntity[]>(Array.isArray(note.photos) ? note.photos : [] );
+  const [tables, setTables] = useState<TableEntity[]>(Array.isArray(note.tables) ? note.tables : [] );
   const [showOptions, setShowOptions] = useState(false);
   const [showImageSelection, setShowImageSelection] = useState(false);
   const [showTableSelection, setShowTableSelection] = useState(false);
@@ -68,14 +68,14 @@ export default function NoteEditorScreen() {
     async (photoId: number) => {
       setPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
     },
-    [setPhotos],
+    [setPhotos]
   );
 
   const handleDeleteTable = useCallback(
     async (tableId: number) => {
       setTables((prev) => prev.filter((table) => table.id !== tableId));
     },
-    [setTables],
+    [setTables]
   );
 
   async function handleSaveNote() {
@@ -88,8 +88,6 @@ export default function NoteEditorScreen() {
     }
 
     setSnackbarVisible(true);
-
-    // Llamamos a `refreshNotes` desde `NotesScreen`
     navigation.getParent()?.setOptions({ noteUpdated: true });
 
     if (route.params?.onSave) {
@@ -102,7 +100,7 @@ export default function NoteEditorScreen() {
       setTables((prev) => [...prev, table]);
       setShowTableSelection(false);
     },
-    [setTables],
+    [setTables]
   );
 
   const handleInsertPhoto = useCallback(
@@ -110,21 +108,21 @@ export default function NoteEditorScreen() {
       setPhotos((prev) => [...prev, photo]);
       setShowImageSelection(false);
     },
-    [setPhotos],
+    [setPhotos]
   );
 
   const renderPhoto = useCallback(
     (photo: PhotoEntity) => (
       <PhotoComponent photo={photo} onDelete={() => handleDeletePhoto(photo.id)} />
     ),
-    [handleDeletePhoto],
+    [handleDeletePhoto]
   );
 
   const renderTable = useCallback(
     (table: TableEntity) => (
       <TableComponent table={table} onDelete={() => handleDeleteTable(table.id)} />
     ),
-    [handleDeleteTable],
+    [handleDeleteTable]
   );
 
   return (
@@ -136,33 +134,29 @@ export default function NoteEditorScreen() {
             placeholder="Título"
             value={title}
             onChangeText={setTitle}
-            style={[styles.titleInput, { color: theme.colors.primary }]}
+            style={[styles.titleInput, { color: theme.colors.onSurface, borderColor: theme.colors.onSurfaceVariant }]}
+            mode="outlined"
             maxLength={100}
+            selectionColor={theme.colors.primary}
           />
           <TextInput
             placeholder="Escribe tu nota aquí..."
             value={content}
             onChangeText={setContent}
             style={styles.contentInput}
+            mode="outlined"
             multiline
+            selectionColor={theme.colors.primary}
           />
           <View style={styles.attachmentsContainer}>
-            {photos.map((photo) => (
-              <View key={`photo-${photo.id}`}>
-                {renderPhoto(photo)}
-              </View>
-            ))}
-            {tables.map((table) => (
-              <View key={`table-${table.id}`}>
-                {renderTable(table)}
-              </View>
-            ))}
+            {photos.map((photo) => renderPhoto(photo))}
+            {tables.map((table) => renderTable(table))}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
       <FAB
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        style={[styles.fab, { backgroundColor: theme.colors.secondary }]}
         icon="plus"
         onPress={() => {
           fetchTables();
@@ -199,6 +193,7 @@ export default function NoteEditorScreen() {
           onSelectTable={handleInsertTable}
         />
       </Portal>
+      
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
@@ -222,18 +217,25 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 16,
-    padding: 0,
+    padding: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderRadius: 8,
   },
   contentInput: {
     fontSize: 16,
     lineHeight: 24,
-    padding: 0,
+    padding: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderRadius: 8,
   },
   fab: {
     position: "absolute",
     margin: 16,
     right: 0,
     bottom: 0,
+    elevation: 4,
   },
   saveButton: {
     position: "absolute",

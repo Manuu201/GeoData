@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import { addReportAsync, updateReportAsync, ReportEntity } from '../../database/database';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { Layout, Input, Button as KittenButton } from '@ui-kitten/components'; // UI Kitten imports
 
 type ReportsEditorScreenProps = NativeStackScreenProps<RootStackParamList, 'ReportsEditorScreen'>;
 
@@ -94,99 +95,108 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
   };
 
   const handleSaveReport = async () => {
-      const now = new Date().toISOString();
-      const newReport: Omit<ReportEntity, 'id' | 'createdAt' | 'updatedAt'> = {
-        type: type as 'sedimentary' | 'igneous' | 'free',
-        title,
-        photoUri,
-        latitude,
-        longitude,
-        text1: JSON.stringify(dynamicTextsValues),
-        text2,
-        tableData: JSON.stringify(tableData),
-      };
-  
-      try {
-          if (report) {
-              await updateReportAsync(db, { ...report, ...newReport, updatedAt: now });
-          } else {
-              await addReportAsync(db, newReport);
-          }
-          navigation.goBack();
-      } catch (error) {
-          console.error('Error al guardar el reporte:', error);
+    const now = new Date().toISOString();
+    const newReport: Omit<ReportEntity, 'id' | 'createdAt' | 'updatedAt'> = {
+      type: type as 'sedimentary' | 'igneous' | 'free',
+      title,
+      photoUri,
+      latitude,
+      longitude,
+      text1: JSON.stringify(dynamicTextsValues),
+      text2,
+      tableData: JSON.stringify(tableData),
+    };
+
+    try {
+      if (report) {
+        await updateReportAsync(db, { ...report, ...newReport, updatedAt: now });
+      } else {
+        await addReportAsync(db, newReport);
       }
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error al guardar el reporte:', error);
+    }
   };
 
   return (
     <ScrollView style={styles.container}>
-      <TextInput style={styles.input} placeholder="Título" value={title} onChangeText={setTitle} />
-      
-      <Picker selectedValue={type} onValueChange={(value) => setType(value)}>
-        <Picker.Item label="Roca Sedimentaria" value="sedimentary" />
-        <Picker.Item label="Roca Ígnea" value="igneous" />
-        <Picker.Item label="Libre" value="free" />
-      </Picker>
+      <Layout style={styles.layout}>
+        <Input
+          label="Título"
+          placeholder="Ingrese el título del reporte"
+          value={title}
+          onChangeText={setTitle}
+          style={styles.input}
+        />
 
-      {dynamicTexts[type].map((label, index) => (
-        <View key={index} style={styles.inputContainer}>
-          <Text style={styles.label}>{label}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={`Ingrese ${label.toLowerCase()}`}
-            value={dynamicTextsValues[index]}
-            onChangeText={(value) => {
-              const newValues = [...dynamicTextsValues];
-              newValues[index] = value;
-              setDynamicTextsValues(newValues);
-            }}
-          />
-        </View>
-      ))}
+        <Picker selectedValue={type} onValueChange={(value) => setType(value)}>
+          <Picker.Item label="Roca Sedimentaria" value="sedimentary" />
+          <Picker.Item label="Roca Ígnea" value="igneous" />
+          <Picker.Item label="Libre" value="free" />
+        </Picker>
 
-      <TextInput
-        style={styles.largeInput}
-        placeholder="Texto libre"
-        multiline
-        value={text2}
-        onChangeText={setText2}
-      />
-
-      <View style={styles.tableControls}>
-        <Button title="➕ Fila" onPress={addRow} />
-        <Button title="➖ Fila" onPress={removeRow} />
-        <Button title="➕ Columna" onPress={addColumn} />
-        <Button title="➖ Columna" onPress={removeColumn} />
-      </View>
-
-      <View style={styles.tableContainer}>
-        {tableData.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.tableRow}>
-            {row.map((cell, colIndex) => (
-              <TextInput
-                key={colIndex}
-                style={styles.tableCell}
-                value={cell}
-                onChangeText={(value) => handleTableChange(rowIndex, colIndex, value)}
-              />
-            ))}
+        {dynamicTexts[type].map((label, index) => (
+          <View key={index} style={styles.inputContainer}>
+            <Text style={styles.label}>{label}</Text>
+            <Input
+              style={styles.input}
+              placeholder={`Ingrese ${label.toLowerCase()}`}
+              value={dynamicTextsValues[index]}
+              onChangeText={(value) => {
+                const newValues = [...dynamicTextsValues];
+                newValues[index] = value;
+                setDynamicTextsValues(newValues);
+              }}
+            />
           </View>
         ))}
-      </View>
 
-      <Button title="Tomar Foto" onPress={handleTakePhoto} />
-      {photoUri && (
-        <View style={styles.photoContainer}>
-          <Image source={{ uri: photoUri }} style={styles.photo} />
-          <Text style={styles.coordinatesText}>
-            Latitud: {latitude.toFixed(6)}, Longitud: {longitude.toFixed(6)}
-          </Text>
+        <Input
+          label="Texto libre"
+          placeholder="Escriba su texto aquí"
+          value={text2}
+          onChangeText={setText2}
+          multiline
+          style={[styles.input, styles.largeInput]}
+        />
+
+        <View style={styles.tableControls}>
+          <KittenButton onPress={addRow} style={styles.button}>➕ Fila</KittenButton>
+          <KittenButton onPress={removeRow} style={styles.button}>➖ Fila</KittenButton>
+          <KittenButton onPress={addColumn} style={styles.button}>➕ Columna</KittenButton>
+          <KittenButton onPress={removeColumn} style={styles.button}>➖ Columna</KittenButton>
         </View>
-      )}
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSaveReport}>
-        <Text style={styles.saveButtonText}>Guardar</Text>
-      </TouchableOpacity>
+        <View style={styles.tableContainer}>
+          {tableData.map((row, rowIndex) => (
+            <View key={rowIndex} style={styles.tableRow}>
+              {row.map((cell, colIndex) => (
+                <Input
+                  key={colIndex}
+                  style={styles.tableCell}
+                  value={cell}
+                  onChangeText={(value) => handleTableChange(rowIndex, colIndex, value)}
+                />
+              ))}
+            </View>
+          ))}
+        </View>
+
+        <KittenButton onPress={handleTakePhoto} style={styles.button}>Tomar Foto</KittenButton>
+        {photoUri && (
+          <View style={styles.photoContainer}>
+            <Image source={{ uri: photoUri }} style={styles.photo} />
+            <Text style={styles.coordinatesText}>
+              Latitud: {latitude.toFixed(6)}, Longitud: {longitude.toFixed(6)}
+            </Text>
+          </View>
+        )}
+
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveReport}>
+          <Text style={styles.saveButtonText}>Guardar</Text>
+        </TouchableOpacity>
+      </Layout>
     </ScrollView>
   );
 };
@@ -194,72 +204,81 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFF',
     padding: 16,
+  },
+  layout: {
+    flex: 1,
+    padding: 16,
+  },
+  input: {
+    marginBottom: 16,
+  },
+  largeInput: {
+    height: 100,
   },
   inputContainer: {
     marginBottom: 16,
   },
-  label: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    borderRadius: 4,
-  },
-  largeInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    marginBottom: 16,
-    borderRadius: 4,
-    height: 100,
-  },
   tableControls: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   tableContainer: {
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   tableRow: {
     flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
   },
   tableCell: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
+    margin: 4,
     padding: 8,
+    backgroundColor: '#f9f9f9',
+    borderWidth: 1,
+    borderColor: '#ddd',
     textAlign: 'center',
+    fontSize: 14,
+  },
+  label: {
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  button: {
+    marginVertical: 8,
   },
   photoContainer: {
-    alignItems: 'center',
     marginBottom: 16,
+    alignItems: 'center',
   },
   photo: {
     width: '100%',
-    height: 300,
+    height: 200,
     resizeMode: 'contain',
-    marginBottom: 8,
   },
   coordinatesText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 12,
+    color: '#555',
   },
   saveButton: {
     backgroundColor: '#007BFF',
     padding: 16,
-    borderRadius: 4,
+    borderRadius: 8,
     alignItems: 'center',
+    marginTop: 16,
   },
   saveButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
   },
 });
+
 
 export default ReportsEditorScreen;
