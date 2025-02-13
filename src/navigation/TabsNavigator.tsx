@@ -1,8 +1,13 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createStackNavigator } from "@react-navigation/stack"
 import { NavigationContainer } from "@react-navigation/native"
-import { PaperProvider, MD3LightTheme as DefaultTheme } from "react-native-paper"
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"
+import { Icon, BottomNavigation, BottomNavigationTab, useTheme } from "@ui-kitten/components"
+import { default as theme } from "./theme.json"
+import * as eva from "@eva-design/eva"
+import { EvaIconsPack } from "@ui-kitten/eva-icons"
+import { ApplicationProvider, IconRegistry } from "@ui-kitten/components"
+
+// Screen imports
 import HomeScreen from "../screens/HomeScreen"
 import TableScreen from "../screens/Tables/TableScreen"
 import PhotosScreen from "../screens/Photos/PhotosScreen"
@@ -18,83 +23,78 @@ import React from "react"
 const Tab = createBottomTabNavigator()
 const Stack = createStackNavigator()
 
-const theme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: "#3498db",
-    secondary: "#2ecc71",
-    background: "#f8f9fa",
-    surface: "#ffffff",
-    text: "#2c3e50",
-    accent: "#e74c3c",
-  },
-  roundness: 12,
+const HomeIcon = (props) => <Icon {...props} name="home-outline" />
+const TableIcon = (props) => <Icon {...props} name="grid-outline" />
+const PhotoIcon = (props) => <Icon {...props} name="image-outline" />
+const NoteIcon = (props) => <Icon {...props} name="edit-2-outline" />
+const ReportIcon = (props) => <Icon {...props} name="file-text-outline" />
+
+const BottomTabBar = ({ navigation, state }) => {
+  const theme = useTheme()
+
+  return (
+    <BottomNavigation
+      selectedIndex={state.index}
+      onSelect={(index) => navigation.navigate(state.routeNames[index])}
+      appearance="noIndicator"
+      style={{
+        backgroundColor: theme["background-basic-color-1"],
+        borderTopWidth: 1,
+        borderTopColor: theme["border-basic-color-3"],
+      }}
+    >
+      <BottomNavigationTab title="Inicio" icon={HomeIcon} />
+      <BottomNavigationTab title="Tablas" icon={TableIcon} />
+      <BottomNavigationTab title="Fotos" icon={PhotoIcon} />
+      <BottomNavigationTab title="Notas" icon={NoteIcon} />
+      <BottomNavigationTab title="Informes" icon={ReportIcon} />
+    </BottomNavigation>
+  )
 }
 
 function TabNavigator() {
   return (
-    <Tab.Navigator id={undefined}
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopWidth: 0,
-          elevation: 10,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-        },
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: "#95a5a6",
-        tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
-        tabBarIcon: ({ color, size }) => {
-          let iconName
-
-          if (route.name === "Inicio") iconName = "home"
-          else if (route.name === "Tablas") iconName = "table-large"
-          else if (route.name === "Fotos") iconName = "image"
-          else if (route.name === "Notas") iconName = "notebook"
-          else if (route.name === "Informes") iconName = "file-document"
-
-          return <Icon name={iconName} size={size} color={color} />
-        },
-      })}
-    >
-      <Tab.Screen name="Inicio" component={HomeScreen} />
-      <Tab.Screen name="Tablas" component={TableScreen} />
-      <Tab.Screen name="Fotos" component={PhotosScreen} />
-      <Tab.Screen name="Notas" component={NotesScreen} />
-      <Tab.Screen name="Informes" component={ReportsScreen} />
+    <Tab.Navigator id={undefined} tabBar={(props) => <BottomTabBar {...props} />}>
+      <Tab.Screen name="Inicio" component={HomeScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Tablas" component={TableScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Fotos" component={PhotosScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Notas" component={NotesScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Informes" component={ReportsScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   )
-} 
+}
 
-export default function AppNavigator() {
-  return (
-    <PaperProvider theme={theme}>
+const AppNavigator = () => (
+  <>
+    <IconRegistry icons={EvaIconsPack} />
+    <ApplicationProvider {...eva} theme={{ ...eva.light, ...theme }}>
       <NavigationContainer>
         <Stack.Navigator id={undefined}
           screenOptions={{
             headerStyle: {
-              backgroundColor: theme.colors.primary,
-              elevation: 0,
-              shadowOpacity: 0,
+              backgroundColor: theme["color-primary-500"],
             },
-            headerTintColor: theme.colors.surface,
-            headerTitleStyle: { fontWeight: "bold" },
+            headerTintColor: theme["color-basic-100"],
+            headerTitleStyle: {
+              fontWeight: "bold",
+            },
           }}
         >
           <Stack.Screen name="MainTabs" component={TabNavigator} options={{ headerShown: false }} />
           <Stack.Screen name="TableEditorScreen" component={TableEditorScreen} options={{ title: "Editar Tabla" }} />
           <Stack.Screen name="PdfViewerScreen" component={PdfViewerScreen} options={{ title: "Ver PDF" }} />
           <Stack.Screen name="NoteEditorScreen" component={NoteEditorScreen} options={{ title: "Editar Nota" }} />
-          <Stack.Screen name="ReportsEditorScreen" component={ReportsEditorScreen} options={{ title: "Editar Informe" }} />
+          <Stack.Screen
+            name="ReportsEditorScreen"
+            component={ReportsEditorScreen}
+            options={{ title: "Editar Informe" }}
+          />
           <Stack.Screen name="OfflineMapScreen" component={OfflineMapScreen} options={{ title: "Ver Mapa" }} />
         </Stack.Navigator>
       </NavigationContainer>
-    </PaperProvider>
-  )
-}
+    </ApplicationProvider>
+  </>
+)
+
+export default AppNavigator
 

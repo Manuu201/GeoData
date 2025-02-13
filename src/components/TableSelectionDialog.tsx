@@ -1,45 +1,37 @@
-import React, { useState } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
-import { Button, Card, Input, Layout, Modal, Text, Icon, Select, SelectItem, IndexPath } from "@ui-kitten/components";
-import { TableEntity } from "../database/database";
+"use client"
+
+import { useState } from "react"
+import { FlatList, StyleSheet } from "react-native"
+import { Button, Card, Input, Modal, Text, Icon, Select, SelectItem, IndexPath } from "@ui-kitten/components"
+import type { TableEntity } from "../database/database"
+import React from "react"
 
 interface TableSelectionDialogProps {
-  visible: boolean;
-  onDismiss: () => void;
-  tables: TableEntity[];
-  onSelectTable: (table: TableEntity) => void;
+  visible: boolean
+  onDismiss: () => void
+  tables: TableEntity[]
+  onSelectTable: (table: TableEntity) => void
 }
 
-export default function TableSelectionDialog({
-  visible,
-  onDismiss,
-  tables,
-  onSelectTable,
-}: TableSelectionDialogProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSortIndex, setSelectedSortIndex] = useState(new IndexPath(0));
+export default function TableSelectionDialog({ visible, onDismiss, tables, onSelectTable }: TableSelectionDialogProps) {
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedSortIndex, setSelectedSortIndex] = useState(new IndexPath(0))
 
-  const sortOptions = ["ID", "Nombre", "Fecha"];
-  const sortBy = sortOptions[selectedSortIndex.row];
+  const sortOptions = ["ID", "Nombre", "Fecha"]
+  const sortBy = sortOptions[selectedSortIndex.row]
 
   // Filtrar y ordenar tablas
   const filteredTables = tables
-    .filter((table) =>
-      table.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    .filter((table) => table.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
-      if (sortBy === "ID") return a.id - b.id;
-      if (sortBy === "Nombre") return a.name.localeCompare(b.name);
-      if (sortBy === "Fecha") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      return 0;
-    });
+      if (sortBy === "ID") return a.id - b.id
+      if (sortBy === "Nombre") return a.name.localeCompare(b.name)
+      if (sortBy === "Fecha") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      return 0
+    })
 
   return (
-    <Modal
-      visible={visible}
-      backdropStyle={styles.backdrop}
-      onBackdropPress={onDismiss}
-    >
+    <Modal visible={visible} backdropStyle={styles.backdrop} onBackdropPress={onDismiss}>
       <Card disabled={true} style={styles.dialog}>
         <Text category="h5" style={styles.title}>
           Seleccionar Tabla
@@ -64,11 +56,7 @@ export default function TableSelectionDialog({
         <FlatList
           data={filteredTables}
           renderItem={({ item }) => (
-            <Card
-              style={styles.card}
-              onPress={() => onSelectTable(item)}
-              status="basic"
-            >
+            <Card style={styles.card} onPress={() => onSelectTable(item)} status="basic">
               <Text category="s1">{item.name}</Text>
               <Text appearance="hint">{`Filas: ${item.rows}, Columnas: ${item.columns}`}</Text>
               <Text appearance="hint">{`Creada el: ${new Date(item.created_at).toLocaleDateString()}`}</Text>
@@ -82,7 +70,7 @@ export default function TableSelectionDialog({
         </Button>
       </Card>
     </Modal>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -117,4 +105,5 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
   },
-});
+})
+

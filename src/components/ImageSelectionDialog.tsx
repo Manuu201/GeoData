@@ -1,46 +1,45 @@
-import React, { useState } from "react";
-import { IndexPath, Select, SelectItem } from "@ui-kitten/components";
-import { Modal, Button, Card, Input, Layout, Text } from "@ui-kitten/components";
-import { FlatList, Image, StyleSheet } from "react-native";
-import { PhotoEntity } from "../database/database";
+"use client"
+
+import { useState } from "react"
+import { IndexPath, Select, SelectItem } from "@ui-kitten/components"
+import { Modal, Button, Card, Input, Text } from "@ui-kitten/components"
+import { FlatList, Image, StyleSheet } from "react-native"
+import type { PhotoEntity } from "../database/database"
+import React from "react"
 
 interface ImageSelectionDialogProps {
-  visible: boolean;
-  onDismiss: () => void;
-  photos: PhotoEntity[];
-  onSelectImage: (photo: PhotoEntity) => void;
+  visible: boolean
+  onDismiss: () => void
+  photos: PhotoEntity[]
+  onSelectImage: (photo: PhotoEntity) => void
 }
 
-export default function ImageSelectionDialog({
-  visible,
-  onDismiss,
-  photos,
-  onSelectImage,
-}: ImageSelectionDialogProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(new IndexPath(0));
-  
+export default function ImageSelectionDialog({ visible, onDismiss, photos, onSelectImage }: ImageSelectionDialogProps) {
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedIndex, setSelectedIndex] = useState(new IndexPath(0))
+
   // Mapear opciones de ordenamiento
-  const sortOptions = ["ID", "Fecha"];
-  const sortBy = sortOptions[selectedIndex.row]; 
+  const sortOptions = ["ID", "Fecha"]
+  const sortBy = sortOptions[selectedIndex.row]
 
   // Filtrar y ordenar fotos
   const filteredPhotos = photos
-    .filter((photo) =>
-      photo.id.toString().includes(searchQuery.toLowerCase()) // Buscar por ID
+    .filter(
+      (photo) => photo.id.toString().includes(searchQuery.toLowerCase()), // Buscar por ID
     )
     .sort((a, b) => {
-      if (sortBy === "ID") return a.id - b.id;
-      if (sortBy === "Fecha") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      return 0;
-    });
+      if (sortBy === "ID") return a.id - b.id
+      if (sortBy === "Fecha") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      return 0
+    })
 
   return (
     <Modal visible={visible} backdropStyle={styles.backdrop} onBackdropPress={onDismiss}>
       <Card disabled>
-        <Text category="h5" style={styles.title}>Seleccionar Imagen</Text>
-        
-        {/* Campo de búsqueda */}
+        <Text category="h5" style={styles.title}>
+          Seleccionar Imagen
+        </Text>
+
         <Input
           placeholder="Buscar por ID"
           value={searchQuery}
@@ -48,7 +47,6 @@ export default function ImageSelectionDialog({
           style={styles.searchInput}
         />
 
-        {/* Selector de ordenamiento */}
         <Select
           selectedIndex={selectedIndex}
           onSelect={(index) => setSelectedIndex(index as IndexPath)}
@@ -60,7 +58,6 @@ export default function ImageSelectionDialog({
           ))}
         </Select>
 
-        {/* Lista de imágenes */}
         <FlatList
           data={filteredPhotos}
           renderItem={({ item }) => (
@@ -74,11 +71,12 @@ export default function ImageSelectionDialog({
           numColumns={2}
         />
 
-        {/* Botón para cerrar */}
-        <Button style={styles.closeButton} onPress={onDismiss}>Cerrar</Button>
+        <Button style={styles.closeButton} onPress={onDismiss}>
+          Cerrar
+        </Button>
       </Card>
     </Modal>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -91,4 +89,5 @@ const styles = StyleSheet.create({
   label: { marginTop: 8, fontWeight: "bold" },
   date: { marginTop: 4, fontSize: 12 },
   closeButton: { marginTop: 16 },
-});
+})
+

@@ -5,7 +5,7 @@ import * as Location from "expo-location"
 import { useSQLiteContext } from "expo-sqlite"
 import { addPhotoAsync, deletePhotoAsync, type PhotoEntity } from "../../database/database"
 import { useNavigation, useFocusEffect } from "@react-navigation/native"
-import { Layout, Button, Card, Icon, Text, Modal, Spinner, Input, TopNavigation } from "@ui-kitten/components"
+import { Layout, Button, Card, Icon, Text, Modal, Spinner, Input, TopNavigation, Divider } from "@ui-kitten/components"
 import { SafeAreaView } from "react-native-safe-area-context"
 import React from "react"
 
@@ -25,7 +25,7 @@ export default function PhotosScreen() {
   useFocusEffect(
     useCallback(() => {
       loadPhotos()
-    }, []),
+    }, [db]), //Corrected dependency array
   )
 
   async function loadPhotos() {
@@ -113,6 +113,7 @@ export default function PhotosScreen() {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <TopNavigation title="Fotos Geológicas" alignment="center" />
+      <Divider />
       <Layout style={styles.container} level="1">
         <Layout style={styles.filterContainer} level="1">
           <Input
@@ -120,14 +121,18 @@ export default function PhotosScreen() {
             value={startDate}
             onChangeText={setStartDate}
             style={styles.dateInput}
+            accessoryLeft={(props) => <Icon {...props} name="calendar-outline" />}
           />
           <Input
             placeholder="Fecha fin (YYYY-MM-DD)"
             value={endDate}
             onChangeText={setEndDate}
             style={styles.dateInput}
+            accessoryLeft={(props) => <Icon {...props} name="calendar-outline" />}
           />
-          <Button onPress={loadPhotos}>Filtrar</Button>
+          <Button onPress={loadPhotos} accessoryLeft={(props) => <Icon {...props} name="search-outline" />}>
+            Filtrar
+          </Button>
         </Layout>
 
         {isLoading ? (
@@ -138,6 +143,7 @@ export default function PhotosScreen() {
           <>
             {photos.length === 0 ? (
               <Layout style={styles.emptyContainer}>
+                <Icon name="image-outline" style={styles.emptyIcon} fill="#8F9BB3" />
                 <Text category="s1">Aún no tienes fotos. ¡Toma una nueva!</Text>
               </Layout>
             ) : (
@@ -155,6 +161,7 @@ export default function PhotosScreen() {
                 onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
                 style={styles.paginationButton}
+                accessoryLeft={(props) => <Icon {...props} name="arrow-back-outline" />}
               >
                 Anterior
               </Button>
@@ -163,6 +170,7 @@ export default function PhotosScreen() {
                 onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
                 style={styles.paginationButton}
+                accessoryRight={(props) => <Icon {...props} name="arrow-forward-outline" />}
               >
                 Siguiente
               </Button>
@@ -191,8 +199,12 @@ export default function PhotosScreen() {
                 style={styles.modalText}
               >{`Lat: ${selectedPhoto.latitude.toFixed(6)}, Lon: ${selectedPhoto.longitude.toFixed(6)}`}</Text>
               <Layout style={styles.modalActions}>
-                <Button onPress={() => setIsModalVisible(false)}>Cerrar</Button>
-                <Button onPress={() => openInMaps(selectedPhoto.latitude, selectedPhoto.longitude)}>Ver en Mapa</Button>
+                <Button onPress={() => setIsModalVisible(false)} status="basic">
+                  Cerrar
+                </Button>
+                <Button onPress={() => openInMaps(selectedPhoto.latitude, selectedPhoto.longitude)} status="info">
+                  Ver en Mapa
+                </Button>
                 <Button status="danger" onPress={() => deletePhoto(selectedPhoto.id)}>
                   Eliminar
                 </Button>
@@ -229,6 +241,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    marginBottom: 16,
+  },
   photoList: {
     paddingBottom: 80,
   },
@@ -247,7 +264,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   paginationButton: {
-    minWidth: 80,
+    minWidth: 100,
   },
   fab: {
     position: "absolute",

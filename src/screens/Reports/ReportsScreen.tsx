@@ -1,122 +1,185 @@
-import React, { useEffect, useState } from 'react';
-import { FlatList, View, Text, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
-import { useSQLiteContext } from 'expo-sqlite';
-import { fetchReportsAsync, deleteReportAsync, ReportEntity } from '../../database/database';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/types';
-import { useFocusEffect } from '@react-navigation/native';
-import { Button, Layout, Input, Select, SelectItem, IndexPath } from '@ui-kitten/components';
+"use client"
 
-type ReportsScreenProps = NativeStackScreenProps<RootStackParamList, 'ReportsScreen'>;
+import React from "react"
+import { useState, useCallback } from "react"
+import { FlatList, View, StyleSheet } from "react-native"
+import { useSQLiteContext } from "expo-sqlite"
+import { fetchReportsAsync, deleteReportAsync, type ReportEntity } from "../../database/database"
+import type { NativeStackScreenProps } from "@react-navigation/native-stack"
+import type { RootStackParamList } from "../../navigation/types"
+import { useFocusEffect } from "@react-navigation/native"
+import {
+  Button,
+  Layout,
+  Input,
+  Select,
+  SelectItem,
+  IndexPath,
+  Text,
+  Card,
+  Modal,
+  Icon,
+  useTheme,
+} from "@ui-kitten/components"
+import { SafeAreaView } from "react-native-safe-area-context"
+import Animated, { FadeInRight, FadeOutLeft, Layout as LayoutAnimation } from "react-native-reanimated"
 
-const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation, route }) => {
-  const [reports, setReports] = useState<ReportEntity[]>([]);
-  const [filter, setFilter] = useState<string>('');
-  const [sortOrder, setSortOrder] = useState<IndexPath>(new IndexPath(0)); // Cambiar a IndexPath
-  const db = useSQLiteContext();
+type ReportsScreenProps = NativeStackScreenProps<RootStackParamList, "ReportsScreen">
 
-  // Recargar los reportes cuando la pantalla recibe el foco
+const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
+  const [reports, setReports] = useState<ReportEntity[]>([])
+  const [filter, setFilter] = useState<string>("")
+  const [sortOrder, setSortOrder] = useState<IndexPath>(new IndexPath(0))
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false)
+  const [reportToDelete, setReportToDelete] = useState<ReportEntity | null>(null)
+  const db = useSQLiteContext()
+  const theme = useTheme()
+
   useFocusEffect(
-    React.useCallback(() => {
-      loadReports();
-    }, [filter, sortOrder]) // Dependemos de filter y sortOrder
-  );
+    useCallback(() => {
+      loadReports()
+    }, []), // Removed unnecessary dependencies
+  )
 
   const loadReports = async () => {
-    const reports = await fetchReportsAsync(db);
-    // Aplicar filtro
-    const filteredReports = reports.filter(report => 
-      report.type.toLowerCase().includes(filter.toLowerCase())
-    );
-    // Ordenar por nombre o fecha
+    const fetchedReports = await fetchReportsAsync(db)
+    const filteredReports = fetchedReports.filter((report) => report.type.toLowerCase().includes(filter.toLowerCase()))
     const sortedReports = filteredReports.sort((a, b) => {
-      if (sortOrder.row === 0) { // Orden ascendente por nombre
-        return a.title.localeCompare(b.title);
-      } else if (sortOrder.row === 1) { // Orden descendente por nombre
-        return b.title.localeCompare(a.title);
-      } else if (sortOrder.row === 2) { // Orden ascendente por fecha
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      } else if (sortOrder.row === 3) { // Orden descendente por fecha
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      switch (sortOrder.row) {
+        case 0:
+          return a.title.localeCompare(b.title)
+        case 1:
+          return b.title.localeCompare(a.title)
+        case 2:
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        case 3:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        default:
+          return 0
       }
-      return 0;
-    });
-    setReports(sortedReports);
-  };
+    })
+    setReports(sortedReports)
+  }
 
-  // Editar un reporte
   const handleEditReport = (report: ReportEntity) => {
-    navigation.navigate('ReportsEditorScreen', { report });
-  };
+    navigation.navigate("ReportsEditorScreen", { report })
+  }
 
-  // Eliminar un reporte
   const handleDeleteReport = async (id: number) => {
-    await deleteReportAsync(db, id);
-    loadReports(); // Recargar la lista después de eliminar
-  };
+    await deleteReportAsync(db, id)
+    setDeleteModalVisible(false)
+    setReportToDelete(null)
+    loadReports()
+  }
+
+  const renderReportItem = ({ item }: { item: ReportEntity }) => (
+    <Animated.View entering={FadeInRight} exiting={FadeOutLeft} layout={LayoutAnimation.springify()}>
+      <Card style={styles.reportItem}>
+        <Text category="h6">{item.title}</Text>
+        <Text category="s1">Tipo: {item.type}</Text>
+        <Text category="s1">Fecha: {new Date(item.createdAt).toLocaleDateString()}</Text>
+        <View style={styles.actions}>
+          <Button size="small" status="info" onPress={() => handleEditReport(item)}>
+            Editar
+          </Button>
+          <Button
+            size="small"
+            status="danger"
+            onPress={() => {
+              setReportToDelete(item)
+              setDeleteModalVisible(true)
+            }}
+          >
+            Eliminar
+          </Button>
+        </View>
+      </Card>
+    </Animated.View>
+  )
 
   return (
-    <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }}>
-      <Layout style={styles.container}>
-        {/* Filtros */}
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme["background-basic-color-1"] }]}>
+      <Layout style={styles.container} level="1">
         <View style={styles.filtersContainer}>
           <Input
             placeholder="Filtrar por tipo de reporte"
             value={filter}
             onChangeText={setFilter}
             style={styles.input}
+            accessoryLeft={(props) => <Icon {...props} name="search-outline" />}
           />
           <Select
-            selectedIndex={sortOrder} // Pasamos el IndexPath directamente
-            onSelect={(index) => setSortOrder(index instanceof IndexPath ? index : index[0])} // Aseguramos que se pase solo un IndexPath
+            selectedIndex={sortOrder}
+            onSelect={(index) => setSortOrder(index instanceof IndexPath ? index : index[0])}
             style={styles.select}
           >
-            <SelectItem title="Nombre (A-Z)" />
-            <SelectItem title="Nombre (Z-A)" />
-            <SelectItem title="Fecha (Más antiguo)" />
-            <SelectItem title="Fecha (Más reciente)" />
+            <SelectItem title="Nombre (A-Z)" accessoryLeft={(props) => <Icon {...props} name="arrow-down-outline" />} />
+            <SelectItem title="Nombre (Z-A)" accessoryLeft={(props) => <Icon {...props} name="arrow-up-outline" />} />
+            <SelectItem
+              title="Fecha (Más antiguo)"
+              accessoryLeft={(props) => <Icon {...props} name="calendar-outline" />}
+            />
+            <SelectItem
+              title="Fecha (Más reciente)"
+              accessoryLeft={(props) => <Icon {...props} name="calendar-outline" />}
+            />
           </Select>
         </View>
 
-        {/* Lista de reportes */}
         <FlatList
           data={reports}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.reportItem}>
-              <Text style={styles.title}>{item.title}</Text>
-              <Text>Tipo: {item.type}</Text>
-              <Text>Fecha: {new Date(item.createdAt).toLocaleDateString()}</Text>
-              <View style={styles.actions}>
-                <Button size="small" onPress={() => handleEditReport(item)}>Editar</Button>
-                <Button size="small" status="danger" onPress={() => handleDeleteReport(item.id)}>Eliminar</Button>
-              </View>
-            </View>
-          )}
+          renderItem={renderReportItem}
+          contentContainerStyle={styles.listContent}
         />
-        
-        {/* Botón para crear un nuevo reporte */}
+
         <Button
           style={styles.addButton}
-          onPress={() => navigation.navigate('ReportsEditorScreen')}
+          onPress={() => navigation.navigate("ReportsEditorScreen")}
+          accessoryLeft={(props) => <Icon {...props} name="plus-outline" />}
         >
           Crear Reporte
         </Button>
+
+        <Modal
+          visible={deleteModalVisible}
+          backdropStyle={styles.backdrop}
+          onBackdropPress={() => setDeleteModalVisible(false)}
+        >
+          <Card disabled={true}>
+            <Text category="h6" style={styles.modalText}>
+              ¿Estás seguro de que quieres eliminar este reporte?
+            </Text>
+            <Text category="s1" style={styles.modalText}>
+              {reportToDelete?.title}
+            </Text>
+            <View style={styles.modalActions}>
+              <Button status="basic" onPress={() => setDeleteModalVisible(false)}>
+                Cancelar
+              </Button>
+              <Button status="danger" onPress={() => reportToDelete && handleDeleteReport(reportToDelete.id)}>
+                Eliminar
+              </Button>
+            </View>
+          </Card>
+        </Modal>
       </Layout>
     </SafeAreaView>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     padding: 16,
   },
   filtersContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 16,
-    marginTop: 16, // Añadir margen superior para evitar que los filtros queden pegados al borde
   },
   input: {
     flex: 2,
@@ -125,27 +188,36 @@ const styles = StyleSheet.create({
   select: {
     flex: 1,
   },
-  reportItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    marginBottom: 8,
-    backgroundColor: 'white',
-    borderRadius: 8,
+  listContent: {
+    paddingBottom: 80,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  reportItem: {
+    marginBottom: 16,
   },
   actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 8,
   },
   addButton: {
-    marginTop: 16,
-    backgroundColor: 'green',
+    position: "absolute",
+    bottom: 16,
+    right: 16,
+    borderRadius: 28,
   },
-});
+  backdrop: {
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalText: {
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+})
 
-export default ReportsScreen;
+export default ReportsScreen
+
