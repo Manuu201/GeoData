@@ -18,7 +18,9 @@ import NoteEditorScreen from "../screens/Notes/NoteEditorScreen"
 import ReportsScreen from "../screens/Reports/ReportsScreen"
 import OfflineMapScreen from "../components/OfflineMapScreen"
 import ReportsEditorScreen from "../screens/Reports/ReportsEditorScreen"
+import StructuralDataScreen from "../screens/StructuralDatas/StructuralDataScreen"
 import React from "react"
+import PhotoSelectorScreen from "../screens/StructuralDatas/PhotoSelectorScreen"
 
 const Tab = createBottomTabNavigator()
 const Stack = createStackNavigator()
@@ -48,6 +50,7 @@ const BottomTabBar = ({ navigation, state }) => {
       <BottomNavigationTab title="Fotos" icon={PhotoIcon} />
       <BottomNavigationTab title="Notas" icon={NoteIcon} />
       <BottomNavigationTab title="Informes" icon={ReportIcon} />
+      <BottomNavigationTab title="Datos" icon={ReportIcon} />
     </BottomNavigation>
   )
 }
@@ -60,6 +63,7 @@ function TabNavigator() {
       <Tab.Screen name="Fotos" component={PhotosScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Notas" component={NotesScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Informes" component={ReportsScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Datos" component={PhotoSelectorScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   )
 }
@@ -90,6 +94,7 @@ const AppNavigator = () => (
             options={{ title: "Editar Informe" }}
           />
           <Stack.Screen name="OfflineMapScreen" component={OfflineMapScreen} options={{ title: "Ver Mapa" }} />
+          <Stack.Screen name="StructuralDataScreen" component={StructuralDataScreen} options={{ title: "Ver Datos Estructurales" }} />
         </Stack.Navigator>
       </NavigationContainer>
     </ApplicationProvider>

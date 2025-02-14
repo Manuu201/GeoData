@@ -1,14 +1,12 @@
-"use client"
-
-import React from "react"
-import { useState, useEffect } from "react"
-import { View, ScrollView, StyleSheet, Image } from "react-native"
-import { useSQLiteContext } from "expo-sqlite"
-import * as ImagePicker from "expo-image-picker"
-import * as Location from "expo-location"
-import { addReportAsync, updateReportAsync, type ReportEntity } from "../../database/database"
-import type { NativeStackScreenProps } from "@react-navigation/native-stack"
-import type { RootStackParamList } from "../../navigation/types"
+import React from "react";
+import { useState, useEffect } from "react";
+import { View, ScrollView, StyleSheet, Image } from "react-native";
+import { useSQLiteContext } from "expo-sqlite";
+import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
+import { addReportAsync, updateReportAsync, type ReportEntity } from "../../database/database";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../../navigation/types";
 import {
   Layout,
   Text,
@@ -21,11 +19,11 @@ import {
   Modal,
   Icon,
   useTheme,
-} from "@ui-kitten/components"
-import { SafeAreaView } from "react-native-safe-area-context"
-import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated"
+} from "@ui-kitten/components";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 
-type ReportsEditorScreenProps = NativeStackScreenProps<RootStackParamList, "ReportsEditorScreen">
+type ReportsEditorScreenProps = NativeStackScreenProps<RootStackParamList, "ReportsEditorScreen">;
 
 const predefinedTemplates = {
   sedimentary: [
@@ -41,7 +39,7 @@ const predefinedTemplates = {
     ["Porcentaje", "", "", "", ""],
   ],
   free: Array(5).fill(Array(5).fill("")),
-}
+};
 
 const dynamicTexts = {
   sedimentary: [
@@ -56,75 +54,93 @@ const dynamicTexts = {
   ],
   igneous: ["Granulometría", "Madurez Textural", "Selección", "Redondez y Esfericidad", "Estructura Sedimentaria"],
   free: [],
-}
+};
 
 const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, route }) => {
-  const { report } = route.params || {}
-  const [title, setTitle] = useState(report?.title || "")
-  const [type, setType] = useState<"sedimentary" | "igneous" | "free">(report?.type || "sedimentary")
-  const [dynamicTextsValues, setDynamicTextsValues] = useState<string[]>([])
-  const [tableData, setTableData] = useState<string[][]>(predefinedTemplates[report?.type || "sedimentary"])
-  const [photoUri, setPhotoUri] = useState(report?.photoUri || "")
-  const [latitude, setLatitude] = useState(report?.latitude || 0)
-  const [longitude, setLongitude] = useState(report?.longitude || 0)
-  const [text2, setText2] = useState(report?.text2 || "")
-  const [selectedTypeIndex, setSelectedTypeIndex] = useState(new IndexPath(0))
-  const [showPhotoModal, setShowPhotoModal] = useState(false)
+  const { report } = route.params || {};
+  const [title, setTitle] = useState(report?.title || "");
+  const [type, setType] = useState<"sedimentary" | "igneous" | "free">(report?.type || "sedimentary");
+  const [dynamicTextsValues, setDynamicTextsValues] = useState<string[]>([]);
+  const [tableData, setTableData] = useState<string[][]>(predefinedTemplates[report?.type || "sedimentary"]);
+  const [photoUri, setPhotoUri] = useState(report?.photoUri || "");
+  const [latitude, setLatitude] = useState(report?.latitude || 0);
+  const [longitude, setLongitude] = useState(report?.longitude || 0);
+  const [text2, setText2] = useState(report?.text2 || "");
+  const [selectedTypeIndex, setSelectedTypeIndex] = useState(new IndexPath(0));
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
 
-  const db = useSQLiteContext()
-  const theme = useTheme()
+  const db = useSQLiteContext();
+  const theme = useTheme();
 
   useEffect(() => {
-    setDynamicTextsValues(dynamicTexts[type].map((_, i) => (report?.text1 ? JSON.parse(report.text1)[i] || "" : "")))
-    setTableData(predefinedTemplates[type])
-  }, [type, report?.text1]) // Added report?.text1 to dependencies
+    setDynamicTextsValues(dynamicTexts[type].map((_, i) => (report?.text1 ? JSON.parse(report.text1)[i] || "" : "")));
+    setTableData(predefinedTemplates[type]);
+  }, [type, report?.text1]);
 
   const handleTakePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync()
-    if (status !== "granted") {
-      alert("Se necesitan permisos para acceder a la cámara.")
-      return
+    // Solicitar permisos de cámara
+    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+    if (cameraStatus !== "granted") {
+      alert("Se necesitan permisos para acceder a la cámara.");
+      return;
     }
 
+    // Solicitar permisos de ubicación
+    const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
+    if (locationStatus !== "granted") {
+      alert("Se necesitan permisos para acceder a la ubicación.");
+      return;
+    }
+
+    // Tomar la foto
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
-    })
+    });
 
     if (!result.canceled) {
-      setPhotoUri(result.assets[0].uri)
-      const location = await Location.getCurrentPositionAsync({})
-      setLatitude(location.coords.latitude)
-      setLongitude(location.coords.longitude)
-      setShowPhotoModal(true)
+      // Obtener la ubicación actual
+      try {
+        const location = await Location.getCurrentPositionAsync({});
+        setLatitude(location.coords.latitude);
+        setLongitude(location.coords.longitude);
+        console.log("Coordenadas obtenidas:", location.coords.latitude, location.coords.longitude);
+      } catch (error) {
+        console.error("Error al obtener la ubicación:", error);
+        alert("No se pudo obtener la ubicación. Asegúrate de que los servicios de ubicación estén activados.");
+      }
+
+      // Guardar la URI de la foto
+      setPhotoUri(result.assets[0].uri);
+      setShowPhotoModal(true);
     }
-  }
+  };
 
   const handleTableChange = (rowIndex: number, colIndex: number, value: string) => {
-    const newRows = [...tableData]
-    newRows[rowIndex][colIndex] = value
-    setTableData(newRows)
-  }
+    const newRows = [...tableData];
+    newRows[rowIndex][colIndex] = value;
+    setTableData(newRows);
+  };
 
   const addRow = () => {
-    setTableData([...tableData, Array(tableData[0]?.length || 5).fill("")])
-  }
+    setTableData([...tableData, Array(tableData[0]?.length || 5).fill("")]);
+  };
 
   const removeRow = () => {
-    if (tableData.length > 1) setTableData(tableData.slice(0, -1))
-  }
+    if (tableData.length > 1) setTableData(tableData.slice(0, -1));
+  };
 
   const addColumn = () => {
-    setTableData(tableData.map((row) => [...row, ""]))
-  }
+    setTableData(tableData.map((row) => [...row, ""]));
+  };
 
   const removeColumn = () => {
-    if (tableData[0]?.length > 1) setTableData(tableData.map((row) => row.slice(0, -1)))
-  }
+    if (tableData[0]?.length > 1) setTableData(tableData.map((row) => row.slice(0, -1)));
+  };
 
   const handleSaveReport = async () => {
-    const now = new Date().toISOString()
+    const now = new Date().toISOString();
     const newReport: Omit<ReportEntity, "id" | "createdAt" | "updatedAt"> = {
       type: type as "sedimentary" | "igneous" | "free",
       title,
@@ -134,19 +150,19 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
       text1: JSON.stringify(dynamicTextsValues),
       text2,
       tableData: JSON.stringify(tableData),
-    }
+    };
 
     try {
       if (report) {
-        await updateReportAsync(db, { ...report, ...newReport, updatedAt: now })
+        await updateReportAsync(db, { ...report, ...newReport, updatedAt: now });
       } else {
-        await addReportAsync(db, newReport)
+        await addReportAsync(db, newReport);
       }
-      navigation.goBack()
+      navigation.goBack();
     } catch (error) {
-      console.error("Error al guardar el reporte:", error)
+      console.error("Error al guardar el reporte:", error);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme["background-basic-color-1"] }]}>
@@ -164,8 +180,8 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
             label="Tipo de Reporte"
             selectedIndex={selectedTypeIndex}
             onSelect={(index) => {
-              setSelectedTypeIndex(index as IndexPath)
-              setType(["sedimentary", "igneous", "free"][(index as IndexPath).row] as "sedimentary" | "igneous" | "free")
+              setSelectedTypeIndex(index as IndexPath);
+              setType(["sedimentary", "igneous", "free"][(index as IndexPath).row] as "sedimentary" | "igneous" | "free");
             }}
             style={styles.input}
           >
@@ -181,9 +197,9 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
                 placeholder={`Ingrese ${label.toLowerCase()}`}
                 value={dynamicTextsValues[index]}
                 onChangeText={(value) => {
-                  const newValues = [...dynamicTextsValues]
-                  newValues[index] = value
-                  setDynamicTextsValues(newValues)
+                  const newValues = [...dynamicTextsValues];
+                  newValues[index] = value;
+                  setDynamicTextsValues(newValues);
                 }}
                 style={styles.input}
               />
@@ -257,6 +273,17 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
             Tomar Foto
           </Button>
 
+          {photoUri ? (
+            <Card style={styles.photoCard}>
+              <Image source={{ uri: photoUri }} style={styles.photo} />
+              <Text category="s1" style={styles.coordinatesText}>
+                Latitud: {latitude.toFixed(6)}, Longitud: {longitude.toFixed(6)}
+              </Text>
+            </Card>
+          ) : (
+            <Text style={styles.noPhotoText}>No se ha tomado ninguna foto.</Text>
+          )}
+
           <Button onPress={handleSaveReport} style={styles.saveButton}>
             Guardar Reporte
           </Button>
@@ -273,8 +300,8 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
         </Card>
       </Modal>
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -344,7 +371,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: "center",
   },
-})
+  photoCard: {
+    marginBottom: 16,
+  },
+  photo: {
+    width: "100%",
+    height: 200,
+    resizeMode: "contain",
+    marginBottom: 16,
+  },
+  noPhotoText: {
+    textAlign: "center",
+    marginBottom: 16,
+    color: "gray",
+  },
+});
 
-export default ReportsEditorScreen
-
+export default ReportsEditorScreen;
