@@ -1,4 +1,34 @@
 {
   "name": "geo",
-  "slug": "geo"
+  "slug": "geo",
+  "version": "1.0.0",
+  "orientation": "portrait",
+  "icon": "./src/assets/icon.png",
+  "splash": {
+    "image": "./src/assets/splash.png",
+    "resizeMode": "contain",
+    "backgroundColor": "#ffffff"
+  },
+  "updates": {
+    "fallbackToCacheTimeout": 0
+  },
+  "assetBundlePatterns": [
+    "**/*"
+  ],
+  "android": {
+    "package": "com.mvargasv1.geo",
+    "versionCode": 1
+  },
+  "ios": {
+    "bundleIdentifier": "com.mvargasv1.geo",
+    "buildNumber": "1.0.0"
+  },
+  "extra": {
+    "eas": {
+      "projectId": "6231b9a5-22c3-4042-bd0f-cdaaa5bfddb2"
+    }
+  },
+  "plugins": [
+    "expo-sqlite"
+  ]
 }
