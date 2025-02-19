@@ -1,137 +1,124 @@
-import { useState, useCallback } from "react"
-import { FlatList, StyleSheet, Image, Platform, Linking } from "react-native"
-import * as ImagePicker from "expo-image-picker"
-import * as Location from "expo-location"
-import { useSQLiteContext } from "expo-sqlite"
-import { addPhotoAsync, deletePhotoAsync, type PhotoEntity } from "../../database/database"
-import { useNavigation, useFocusEffect } from "@react-navigation/native"
-import { Layout, Button, Card, Icon, Text, Modal, Spinner, Input, TopNavigation, Divider } from "@ui-kitten/components"
-import { SafeAreaView } from "react-native-safe-area-context"
-import React from "react"
+import { useState, useCallback } from "react";
+import { FlatList, StyleSheet, Image, Platform, Linking } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
+import { useSQLiteContext } from "expo-sqlite";
+import { addPhotoAsync, deletePhotoAsync, type PhotoEntity } from "../../database/database";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { Layout, Button, Card, Icon, Text, Modal, Spinner, TopNavigation, Divider } from "@ui-kitten/components";
+import { SafeAreaView } from "react-native-safe-area-context";
+import React from "react";
+
+const ITEMS_PER_PAGE = 5;
 
 export default function PhotosScreen() {
-  const navigation = useNavigation()
-  const db = useSQLiteContext()
-  const [photos, setPhotos] = useState<PhotoEntity[]>([])
-  const [selectedPhoto, setSelectedPhoto] = useState<PhotoEntity | null>(null)
-  const [isModalVisible, setIsModalVisible] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [startDate, setStartDate] = useState<string>("")
-  const [endDate, setEndDate] = useState<string>("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const itemsPerPage = 5
+  const navigation = useNavigation();
+  const db = useSQLiteContext();
+  const [photos, setPhotos] = useState<PhotoEntity[]>([]);
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoEntity | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">("DESC");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useFocusEffect(
     useCallback(() => {
-      loadPhotos()
-    }, [db]), //Corrected dependency array
-  )
+      loadPhotos();
+    }, [db, sortOrder, currentPage]),
+  );
 
   async function loadPhotos() {
-    setIsLoading(true)
-    let query = "SELECT * FROM photos WHERE 1=1"
-    if (startDate) {
-      query += ` AND DATE(created_at) >= '${startDate}'`
-    }
-    if (endDate) {
-      query += ` AND DATE(created_at) <= '${endDate}'`
-    }
-    query += ` LIMIT ${itemsPerPage} OFFSET ${(currentPage - 1) * itemsPerPage}`
+    setIsLoading(true);
 
-    const filteredPhotos = await db.getAllAsync<PhotoEntity>(query)
-    setPhotos(filteredPhotos)
+    const query = `SELECT * FROM photos ORDER BY created_at ${sortOrder} LIMIT ? OFFSET ?`;
+    const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+    const params = [ITEMS_PER_PAGE, offset];
 
-    const countQuery = "SELECT COUNT(*) as total FROM photos WHERE 1=1"
-    const totalCount = await db.getFirstAsync<{ total: number }>(countQuery)
-    setTotalPages(Math.ceil(totalCount.total / itemsPerPage))
+    const filteredPhotos = await db.getAllAsync<PhotoEntity>(query, params);
+    setPhotos(filteredPhotos);
 
-    setIsLoading(false)
+    const countQuery = "SELECT COUNT(*) as total FROM photos";
+    const totalCount = await db.getFirstAsync<{ total: number }>(countQuery);
+    setTotalPages(Math.ceil(totalCount.total / ITEMS_PER_PAGE));
+
+    setIsLoading(false);
   }
 
   async function takePhoto() {
-    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync()
+    const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
     if (cameraStatus !== "granted") {
-      alert("Se necesita permiso para usar la cámara")
-      return
+      alert("Se necesita permiso para usar la cámara");
+      return;
     }
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
-    })
+    });
 
     if (!result.canceled) {
-      const uri = result.assets[0].uri
+      const uri = result.assets[0].uri;
 
-      const { status: locationStatus } = await Location.requestForegroundPermissionsAsync()
+      const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
       if (locationStatus !== "granted") {
-        alert("Se necesita permiso de ubicación para guardar la foto")
-        return
+        alert("Se necesita permiso de ubicación para guardar la foto");
+        return;
       }
 
       try {
-        const location = await Location.getCurrentPositionAsync({})
-        const { latitude, longitude } = location.coords
+        const location = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = location.coords;
 
-        await addPhotoAsync(db, uri, latitude, longitude)
-        loadPhotos()
+        await addPhotoAsync(db, uri, latitude, longitude);
+        loadPhotos();
       } catch (error) {
-        alert("No se pudo obtener la ubicación")
+        alert("No se pudo obtener la ubicación");
       }
     }
+  }
+
+  function toggleSortOrder() {
+    setSortOrder(sortOrder === "ASC" ? "DESC" : "ASC");
+    setCurrentPage(1); // Reset to first page when changing sort order
   }
 
   function openInMaps(latitude: number, longitude: number) {
     const url =
       Platform.OS === "ios"
         ? `https://maps.apple.com/?q=${latitude},${longitude}`
-        : `geo:${latitude},${longitude}?q=${latitude},${longitude}`
-    Linking.openURL(url)
+        : `geo:${latitude},${longitude}?q=${latitude},${longitude}`;
+    Linking.openURL(url);
   }
 
   async function deletePhoto(id: number) {
-    await deletePhotoAsync(db, id)
-    loadPhotos()
-    setSelectedPhoto(null)
-    setIsModalVisible(false)
+    await deletePhotoAsync(db, id);
+    loadPhotos();
+    setSelectedPhoto(null);
+    setIsModalVisible(false);
   }
 
   const renderPhotoItem = ({ item }: { item: PhotoEntity }) => (
     <Card
       style={styles.card}
       onPress={() => {
-        setSelectedPhoto(item)
-        setIsModalVisible(true)
+        setSelectedPhoto(item);
+        setIsModalVisible(true);
       }}
     >
       <Image source={{ uri: item.uri }} style={styles.image} />
     </Card>
-  )
+  );
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <TopNavigation title="Fotos Geológicas" alignment="center" />
       <Divider />
       <Layout style={styles.container} level="1">
-        <Layout style={styles.filterContainer} level="1">
-          <Input
-            placeholder="Fecha inicio (YYYY-MM-DD)"
-            value={startDate}
-            onChangeText={setStartDate}
-            style={styles.dateInput}
-            accessoryLeft={(props) => <Icon {...props} name="calendar-outline" />}
-          />
-          <Input
-            placeholder="Fecha fin (YYYY-MM-DD)"
-            value={endDate}
-            onChangeText={setEndDate}
-            style={styles.dateInput}
-            accessoryLeft={(props) => <Icon {...props} name="calendar-outline" />}
-          />
-          <Button onPress={loadPhotos} accessoryLeft={(props) => <Icon {...props} name="search-outline" />}>
-            Filtrar
+        <Layout style={styles.sortContainer} level="1">
+          <Button onPress={toggleSortOrder} accessoryLeft={(props) => <Icon {...props} name="swap-outline" />}>
+            {`Ordenar por Fecha ${sortOrder === "ASC" ? "⬆" : "⬇"}`}
           </Button>
         </Layout>
 
@@ -214,7 +201,7 @@ export default function PhotosScreen() {
         </Modal>
       </Layout>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -222,14 +209,10 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  filterContainer: {
+  sortContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     marginBottom: 16,
-  },
-  dateInput: {
-    flex: 1,
-    marginRight: 8,
   },
   spinnerContainer: {
     flex: 1,
@@ -294,5 +277,4 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-})
-
+});

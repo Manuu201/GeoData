@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, Image, StyleSheet, Dimensions, Animated, PanResponder } from "react-native";
-import { Layout, Text, Button } from '@ui-kitten/components';
+import { View, Image, StyleSheet, Dimensions, Animated, PanResponder, TouchableOpacity } from "react-native";
+import { Layout, Text, Button, Icon } from '@ui-kitten/components';
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import Svg, { Circle, Line, Text as SvgText, G } from 'react-native-svg';
+import * as MediaLibrary from 'expo-media-library';
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParamList } from "../../navigation/types";
 import type { PhotoEntity } from "../../database/database";
@@ -18,7 +19,10 @@ export default function StructuralDataScreen({ route }) {
   const [dip, setDip] = useState(0);
   const [dipDir, setDipDir] = useState(0);
   const [rotation, setRotation] = useState(0);
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const svgRef = useRef(null);
 
   const { width, height } = Dimensions.get("window");
   const centerX = width / 2;
@@ -48,28 +52,49 @@ export default function StructuralDataScreen({ route }) {
     }, [photoId])
   );
 
-  const rotateResponder = useRef(
+  // Guardar la imagen con la red estereográfica
+  const saveImage = async () => {
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        alert("Se necesitan permisos para guardar la imagen.");
+        return;
+      }
+
+      const uri = await captureRef(svgRef, {
+        format: 'png',
+        quality: 1,
+      });
+
+      await MediaLibrary.saveToLibraryAsync(uri);
+      alert("Imagen guardada en la galería.");
+    } catch (error) {
+      console.error("Error al guardar la imagen:", error);
+    }
+  };
+
+  // Ajustar la imagen al plano (zoom y pan)
+  const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (_, gestureState) => {
-        setRotation(prev => (prev + gestureState.dx * 0.5) % 360);
+        setOffset({
+          x: offset.x + gestureState.dx,
+          y: offset.y + gestureState.dy,
+        });
+      },
+      onPanResponderRelease: () => {
+        // Lógica adicional si es necesario
       },
     })
   ).current;
 
-  const adjustResponder = useRef(
+  const pinchResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (_, gestureState) => {
-        const deltaX = gestureState.moveX - centerX;
-        const deltaY = gestureState.moveY - centerY;
-
-        let newDipDir = Math.atan2(deltaY, deltaX) * (180 / Math.PI) + 90;
-        if (newDipDir < 0) newDipDir += 360;
-        setDipDir(newDipDir);
-
-        const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-        setDip(Math.min((distance / radius) * 90, 90));
+        const newScale = Math.sqrt(gestureState.dx * gestureState.dx + gestureState.dy * gestureState.dy) / 100;
+        setScale(newScale);
       },
     })
   ).current;
@@ -78,32 +103,78 @@ export default function StructuralDataScreen({ route }) {
 
   return (
     <Layout style={styles.container}>
-      <Image source={{ uri: photo.uri }} style={styles.image} resizeMode="contain" />
-      <Svg style={styles.overlay} {...rotateResponder.panHandlers}>
+      {/* Imagen con ajuste de zoom y pan */}
+      <Animated.View
+        style={[
+          styles.imageContainer,
+          { transform: [{ translateX: offset.x }, { translateY: offset.y }, { scale }] },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <Image source={{ uri: photo.uri }} style={styles.image} resizeMode="contain" />
+      </Animated.View>
+
+      {/* Red estereográfica */}
+      <Svg style={styles.overlay} ref={svgRef}>
         <G transform={`rotate(${rotation}, ${centerX}, ${centerY})`}>
-          <Circle cx={centerX} cy={centerY} r={radius} stroke="black" fill="none" strokeWidth={1.5} />
-          <Line x1={centerX} y1={centerY - radius} x2={centerX} y2={centerY + radius} stroke="gray" strokeWidth={1} />
-          <Line x1={centerX - radius} y1={centerY} x2={centerX + radius} y2={centerY} stroke="gray" strokeWidth={1} />
+          {/* Círculo principal */}
+          <Circle cx={centerX} cy={centerY} r={radius} stroke="#333" fill="none" strokeWidth={1.5} />
 
-          {/* Etiquetas N, S, E, O */}
-          <SvgText x={centerX} y={centerY - radius - 10} fill="black" textAnchor="middle" fontSize="14">N</SvgText>
-          <SvgText x={centerX} y={centerY + radius + 20} fill="black" textAnchor="middle" fontSize="14">S</SvgText>
-          <SvgText x={centerX - radius - 20} y={centerY} fill="black" textAnchor="middle" fontSize="14">O</SvgText>
-          <SvgText x={centerX + radius + 20} y={centerY} fill="black" textAnchor="middle" fontSize="14">E</SvgText>
+          {/* Líneas cardinales */}
+          <Line x1={centerX} y1={centerY - radius} x2={centerX} y2={centerY + radius} stroke="#666" strokeWidth={1} />
+          <Line x1={centerX - radius} y1={centerY} x2={centerX + radius} y2={centerY} stroke="#666" strokeWidth={1} />
 
-          <Line x1={centerX} y1={centerY} x2={centerX + radius * Math.cos((dipDir - 90) * (Math.PI / 180)) * (dip / 90)}
+          {/* Etiquetas de ángulos cada 30 grados */}
+          {Array.from({ length: 12 }).map((_, i) => {
+            const angle = i * 30;
+            const rad = (angle - 90) * (Math.PI / 180);
+            return (
+              <SvgText
+                key={angle}
+                x={centerX + (radius + 20) * Math.cos(rad)}
+                y={centerY + (radius + 20) * Math.sin(rad)}
+                fill="#333"
+                textAnchor="middle"
+                fontSize="12"
+              >
+                {angle}°
+              </SvgText>
+            );
+          })}
+
+          {/* Línea de dirección de inclinación */}
+          <Line
+            x1={centerX}
+            y1={centerY}
+            x2={centerX + radius * Math.cos((dipDir - 90) * (Math.PI / 180)) * (dip / 90)}
             y2={centerY + radius * Math.sin((dipDir - 90) * (Math.PI / 180)) * (dip / 90)}
-            stroke="red" strokeWidth={2} />
+            stroke="red"
+            strokeWidth={2}
+          />
+
+          {/* Punto indicador de dirección */}
+          <Circle
+            cx={centerX + radius * Math.cos((dipDir - 90) * (Math.PI / 180)) * (dip / 90)}
+            cy={centerY + radius * Math.sin((dipDir - 90) * (Math.PI / 180)) * (dip / 90)}
+            r={5}
+            fill="red"
+          />
         </G>
       </Svg>
 
-      {/* Texto fijo del Dip y DipDir */}
+      {/* Botón para guardar la imagen */}
+      <TouchableOpacity style={styles.saveButton} onPress={saveImage}>
+        <Icon name="save" fill="#FFF" style={styles.saveIcon} />
+      </TouchableOpacity>
+
+      {/* Información de Dip y DipDir */}
       <View style={styles.dipInfo}>
         <Text category="h6">{`Dip: ${dip.toFixed(1)}°`}</Text>
         <Text category="h6">{`DipDir: ${dipDir.toFixed(1)}°`}</Text>
         <Text category="h6">{`Rotación: ${rotation.toFixed(1)}°`}</Text>
       </View>
 
+      {/* Controles para ajustar Dip, DipDir y Rotación */}
       <View style={styles.controls}>
         <Button onPress={() => setDip(prev => Math.min(prev + 1, 90))}>⬆ Dip</Button>
         <Button onPress={() => setDip(prev => Math.max(prev - 1, 0))}>⬇ Dip</Button>
@@ -118,9 +189,23 @@ export default function StructuralDataScreen({ route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  image: { width: "100%", height: "100%", position: 'absolute' },
+  imageContainer: { position: 'absolute', width: "100%", height: "100%" },
+  image: { width: "100%", height: "100%" },
   overlay: { width: "100%", height: "100%", position: 'absolute' },
-  dipInfo: { position: 'absolute', top: 40, backgroundColor: 'rgba(255,255,255,0.7)', padding: 10, borderRadius: 10 },
+  dipInfo: { position: 'absolute', top: 40, backgroundColor: 'rgba(255,255,255,0.9)', padding: 10, borderRadius: 10 },
   controls: { position: 'absolute', bottom: 20, flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
+  saveButton: { position: 'absolute', top: 20, right: 20, backgroundColor: '#3366FF', padding: 10, borderRadius: 20 },
+  saveIcon: { width: 24, height: 24 },
 });
+
+async function captureRef(svgRef: any, options: { format: string; quality: number; }) {
+  try {
+    const uri = await svgRef.toDataURL(options.format, options.quality);
+    return uri;
+  } catch (error) {
+    console.error("Error capturing SVG:", error);
+    throw error;
+  }
+}
+
 

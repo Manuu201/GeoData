@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useCallback } from "react"
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native"
 import { Layout, Text, Input, Button, Icon, Modal, Card, useTheme } from "@ui-kitten/components"

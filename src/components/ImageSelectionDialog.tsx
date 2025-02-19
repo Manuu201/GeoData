@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { IndexPath, Select, SelectItem } from "@ui-kitten/components"
 import { Modal, Button, Card, Input, Text } from "@ui-kitten/components"

@@ -21,6 +21,10 @@ import ReportsEditorScreen from "../screens/Reports/ReportsEditorScreen"
 import StructuralDataScreen from "../screens/StructuralDatas/StructuralDataScreen"
 import React from "react"
 import PhotoSelectorScreen from "../screens/StructuralDatas/PhotoSelectorScreen"
+import LithologyListScreen from "../screens/Litologic/LithologyListScreen"
+import LithologyFormScreen from "../screens/Litologic/LithologyFormScreen"
+import LithologyDetailScreen from "../screens/Litologic/LithologyDetailScreen"
+import CreateColumnScreen from "../screens/Litologic/CreateColumnScreen"
 
 const Tab = createBottomTabNavigator()
 const Stack = createStackNavigator()
@@ -51,6 +55,7 @@ const BottomTabBar = ({ navigation, state }) => {
       <BottomNavigationTab title="Notas" icon={NoteIcon} />
       <BottomNavigationTab title="Informes" icon={ReportIcon} />
       <BottomNavigationTab title="Datos" icon={ReportIcon} />
+      <BottomNavigationTab title="Litologia" icon={ReportIcon} />
     </BottomNavigation>
   )
 }
@@ -64,6 +69,7 @@ function TabNavigator() {
       <Tab.Screen name="Notas" component={NotesScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Informes" component={ReportsScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Datos" component={PhotoSelectorScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Litologia" component={LithologyListScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   )
 }
@@ -95,6 +101,9 @@ const AppNavigator = () => (
           />
           <Stack.Screen name="OfflineMapScreen" component={OfflineMapScreen} options={{ title: "Ver Mapa" }} />
           <Stack.Screen name="StructuralDataScreen" component={StructuralDataScreen} options={{ title: "Ver Datos Estructurales" }} />
+          <Stack.Screen name="LithologyFormScreen" component={LithologyFormScreen} options={{ title: "Ver Columnas Litologica" }} />
+          <Stack.Screen name="LithologyDetailScreen" component={LithologyDetailScreen} options={{ title: "Ver Detalles Columnas Litologica" }} />
+          <Stack.Screen name="CreateColumnScreen" component={CreateColumnScreen} options={{ title: "Crear Columnas Litologicas" }} />
         </Stack.Navigator>
       </NavigationContainer>
     </ApplicationProvider>

@@ -51,6 +51,43 @@ export interface ReportEntity {
   createdAt: string; // Fecha de creación
   updatedAt: string; // Fecha de actualización
 }
+
+
+export interface LithologyEntity {
+  id: number;
+  type: 'sedimentary' | 'igneous' | 'metamorphic';
+  subtype: string;
+  thickness: number;
+  structure: string;
+  fossils: string;
+  imageUri?: string;
+  notes?: string;
+  geologicalEvent?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+
+export interface LithologyColumnEntity {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LithologyLayerEntity {
+  id: number;
+  columnId: number;
+  type: 'sedimentary' | 'igneous' | 'metamorphic';
+  subtype: string;
+  thickness: number;
+  structure: string;
+  fossils: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+
 /**
  * Agrega un nuevo item a la lista de tareas.
  */
@@ -305,6 +342,141 @@ export async function deleteReportAsync(db: SQLiteDatabase, id: number): Promise
     console.error('Error al eliminar el reporte:', error);
   }
 }
+
+
+export async function addLithologyAsync(
+  db: SQLiteDatabase,
+  type: 'sedimentary' | 'igneous' | 'metamorphic',
+  subtype: string,
+  thickness: number,
+  structure: string,
+  fossils: string,
+  imageUri?: string,
+  notes?: string,
+  geologicalEvent?: string
+): Promise<void> {
+  const createdAt = new Date().toISOString();
+  const updatedAt = createdAt;
+
+  await db.runAsync(
+    'INSERT INTO lithologies (type, subtype, thickness, structure, fossils, imageUri, notes, geologicalEvent, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
+    type, subtype, thickness, structure, fossils, imageUri || null, notes || null, geologicalEvent || null, createdAt, updatedAt
+  );
+}
+
+export async function fetchLithologiesAsync(db: SQLiteDatabase): Promise<LithologyEntity[]> {
+  return await db.getAllAsync<LithologyEntity>('SELECT * FROM lithologies;');
+}
+
+export async function updateLithologyAsync(
+  db: SQLiteDatabase,
+  id: number,
+  type: 'sedimentary' | 'igneous' | 'metamorphic',
+  subtype: string,
+  thickness: number,
+  structure: string,
+  fossils: string,
+  imageUri?: string,
+  notes?: string,
+  geologicalEvent?: string
+): Promise<void> {
+  const updatedAt = new Date().toISOString();
+
+  await db.runAsync(
+    'UPDATE lithologies SET type = ?, subtype = ?, thickness = ?, structure = ?, fossils = ?, imageUri = ?, notes = ?, geologicalEvent = ?, updatedAt = ? WHERE id = ?;',
+    type, subtype, thickness, structure, fossils, imageUri || null, notes || null, geologicalEvent || null, updatedAt, id
+  );
+}
+
+export async function deleteLithologyAsync(db: SQLiteDatabase, id: number): Promise<void> {
+  await db.runAsync('DELETE FROM lithologies WHERE id = ?;', id);
+}
+
+
+export async function createColumnAsync(db: SQLiteDatabase, name: string): Promise<number> {
+  const createdAt = new Date().toISOString();
+  const updatedAt = createdAt;
+
+  console.log(`Creando columna litográfica: ${name}`); // Log para depuración
+
+  try {
+    const result = await db.runAsync(
+      'INSERT INTO columns (name, createdAt, updatedAt) VALUES (?, ?, ?);',
+      name, createdAt, updatedAt
+    );
+    console.log(`Columna creada con ID: ${result.lastInsertRowId}`); // Log para depuración
+    return result.lastInsertRowId;
+  } catch (error) {
+    console.error('Error al crear la columna:', error); // Log para depuración
+    throw error;
+  }
+}
+
+export async function addLayerAsync(
+  db: SQLiteDatabase,
+  columnId: number,
+  type: 'sedimentary' | 'igneous' | 'metamorphic',
+  subtype: string,
+  thickness: number,
+  structure: string,
+  fossils: string
+): Promise<void> {
+  const createdAt = new Date().toISOString();
+  const updatedAt = createdAt;
+
+  console.log(`Agregando capa a la columna ${columnId}:`, { type, subtype, thickness, structure, fossils }); // Log para depuración
+
+  try {
+    await db.runAsync(
+      'INSERT INTO layers (columnId, type, subtype, thickness, structure, fossils, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+      columnId, type, subtype, thickness, structure, fossils, createdAt, updatedAt
+    );
+    console.log('Capa agregada correctamente'); // Log para depuración
+  } catch (error) {
+    console.error('Error al agregar la capa:', error); // Log para depuración
+    throw error;
+  }
+}
+
+export async function fetchColumnsAsync(db: SQLiteDatabase): Promise<LithologyColumnEntity[]> {
+  console.log('Recuperando todas las columnas litográficas'); // Log para depuración
+
+  try {
+    const columns = await db.getAllAsync<LithologyColumnEntity>('SELECT * FROM columns;');
+    console.log('Columnas recuperadas:', columns); // Log para depuración
+    return columns;
+  } catch (error) {
+    console.error('Error al recuperar las columnas:', error); // Log para depuración
+    return [];
+  }
+}
+
+export async function fetchLayersAsync(db: SQLiteDatabase, columnId: number): Promise<LithologyLayerEntity[]> {
+  console.log(`Recuperando capas para la columna ${columnId}`); // Log para depuración
+
+  try {
+    const layers = await db.getAllAsync<LithologyLayerEntity>('SELECT * FROM layers WHERE columnId = ?;', columnId);
+    console.log('Capas recuperadas:', layers); // Log para depuración
+    return layers;
+  } catch (error) {
+    console.error('Error al recuperar las capas:', error); // Log para depuración
+    return [];
+  }
+}
+
+export async function deleteColumnAsync(db: SQLiteDatabase, id: number): Promise<void> {
+  console.log(`Eliminando columna con ID: ${id}`); // Log para depuración
+
+  try {
+    await db.runAsync('DELETE FROM columns WHERE id = ?;', id);
+    await db.runAsync('DELETE FROM layers WHERE columnId = ?;', id);
+    console.log('Columna y capas asociadas eliminadas correctamente'); // Log para depuración
+  } catch (error) {
+    console.error('Error al eliminar la columna:', error); // Log para depuración
+    throw error;
+  }
+}
+
  /**
  * Migración de la base de datos.
  */
@@ -364,6 +536,37 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
         tableData TEXT,
         createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS lithologies (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        subtype TEXT NOT NULL,
+        thickness REAL NOT NULL,
+        structure TEXT,
+        fossils TEXT,
+        imageUri TEXT,
+        notes TEXT,
+        geologicalEvent TEXT,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS columns (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS layers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        columnId INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        subtype TEXT NOT NULL,
+        thickness REAL NOT NULL,
+        structure TEXT,
+        fossils TEXT,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        FOREIGN KEY (columnId) REFERENCES columns (id) ON DELETE CASCADE
       );
     `);
     currentDbVersion = 6;
