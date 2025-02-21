@@ -85,6 +85,7 @@ export interface LithologyLayerEntity {
   fossils: string;
   createdAt: string;
   updatedAt: string;
+  order: number; // Asegúrate de que este campo esté definido
 }
 
 
@@ -424,16 +425,23 @@ export async function addLayerAsync(
   const createdAt = new Date().toISOString();
   const updatedAt = createdAt;
 
-  console.log(`Agregando capa a la columna ${columnId}:`, { type, subtype, thickness, structure, fossils }); // Log para depuración
+  // Obtener el máximo valor de `order` para la columna
+  const maxOrderResult = await db.getFirstAsync<{ maxOrder: number }>(
+    'SELECT MAX(`order`) as maxOrder FROM layers WHERE columnId = ?;',
+    columnId
+  );
+  const order = (maxOrderResult?.maxOrder || 0) + 1;
+
+  console.log(`Agregando capa a la columna ${columnId}:`, { type, subtype, thickness, structure, fossils, order });
 
   try {
     await db.runAsync(
-      'INSERT INTO layers (columnId, type, subtype, thickness, structure, fossils, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
-      columnId, type, subtype, thickness, structure, fossils, createdAt, updatedAt
+      'INSERT INTO layers (columnId, type, subtype, thickness, structure, fossils, createdAt, updatedAt, `order`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);',
+      columnId, type, subtype, thickness, structure, fossils, createdAt, updatedAt, order
     );
-    console.log('Capa agregada correctamente'); // Log para depuración
+    console.log('Capa agregada correctamente');
   } catch (error) {
-    console.error('Error al agregar la capa:', error); // Log para depuración
+    console.error('Error al agregar la capa:', error);
     throw error;
   }
 }
@@ -452,15 +460,76 @@ export async function fetchColumnsAsync(db: SQLiteDatabase): Promise<LithologyCo
 }
 
 export async function fetchLayersAsync(db: SQLiteDatabase, columnId: number): Promise<LithologyLayerEntity[]> {
-  console.log(`Recuperando capas para la columna ${columnId}`); // Log para depuración
+  console.log(`Recuperando capas para la columna ${columnId}`);
 
   try {
-    const layers = await db.getAllAsync<LithologyLayerEntity>('SELECT * FROM layers WHERE columnId = ?;', columnId);
-    console.log('Capas recuperadas:', layers); // Log para depuración
+    const layers = await db.getAllAsync<LithologyLayerEntity>(
+      'SELECT * FROM layers WHERE columnId = ? ORDER BY `order` ASC;',
+      columnId
+    );
+    console.log('Capas recuperadas:', layers);
     return layers;
   } catch (error) {
-    console.error('Error al recuperar las capas:', error); // Log para depuración
+    console.error('Error al recuperar las capas:', error);
     return [];
+  }
+}
+
+export async function updateLayerOrderAsync(
+  db: SQLiteDatabase,
+  id: number,
+  order: number
+): Promise<void> {
+  const updatedAt = new Date().toISOString();
+
+  console.log(`Actualizando orden de la capa con ID: ${id} a ${order}`);
+
+  try {
+    await db.runAsync(
+      'UPDATE layers SET `order` = ?, updatedAt = ? WHERE id = ?;',
+      order, updatedAt, id
+    );
+    console.log('Orden de la capa actualizado correctamente');
+  } catch (error) {
+    console.error('Error al actualizar el orden de la capa:', error);
+    throw error;
+  }
+}
+
+export async function updateLayerAsync(
+  db: SQLiteDatabase,
+  id: number,
+  type: 'sedimentary' | 'igneous' | 'metamorphic',
+  subtype: string,
+  thickness: number,
+  structure: string,
+  fossils: string
+): Promise<void> {
+  const updatedAt = new Date().toISOString();
+
+  console.log(`Actualizando capa con ID: ${id}`); // Log para depuración
+
+  try {
+    await db.runAsync(
+      'UPDATE layers SET type = ?, subtype = ?, thickness = ?, structure = ?, fossils = ?, updatedAt = ? WHERE id = ?;',
+      type, subtype, thickness, structure, fossils, updatedAt, id
+    );
+    console.log('Capa actualizada correctamente'); // Log para depuración
+  } catch (error) {
+    console.error('Error al actualizar la capa:', error); // Log para depuración
+    throw error;
+  }
+}
+
+export async function deleteLayerAsync(db: SQLiteDatabase, id: number): Promise<void> {
+  console.log(`Eliminando capa con ID: ${id}`); // Log para depuración
+
+  try {
+    await db.runAsync('DELETE FROM layers WHERE id = ?;', id);
+    console.log('Capa eliminada correctamente'); // Log para depuración
+  } catch (error) {
+    console.error('Error al eliminar la capa:', error); // Log para depuración
+    throw error;
   }
 }
 
@@ -566,6 +635,7 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
         fossils TEXT,
         createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL,
+        \`order\` INTEGER, 
         FOREIGN KEY (columnId) REFERENCES columns (id) ON DELETE CASCADE
       );
     `);

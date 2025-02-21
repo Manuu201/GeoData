@@ -11,7 +11,7 @@ export default function App() {
     <>
       <IconRegistry icons={EvaIconsPack} />
       <ApplicationProvider {...eva} theme={eva.light}>
-        <SQLiteProvider databaseName="dataass.db" onInit={migrateDbIfNeeded}>
+        <SQLiteProvider databaseName="datasasss1.db" onInit={migrateDbIfNeeded}>
           <TabsNavigator />
         </SQLiteProvider>
       </ApplicationProvider>
