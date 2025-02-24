@@ -1,74 +1,104 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Animated } from 'react-native';
-import { Layout, Text, Card, Button, Icon, TopNavigation, useTheme } from '@ui-kitten/components';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React from "react";
+import { ScrollView, StyleSheet } from "react-native";
+import { Layout, Text, Card, Button, Icon, TopNavigation, useTheme } from "@ui-kitten/components";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 export default function HomeScreen({ navigation }) {
   const theme = useTheme();
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }).start();
-  }, []);
 
   const features = [
-    { name: "Tablas", icon: "file-text-outline", screen: "Tablas", color: theme['color-primary-500'] },
-    { name: "Fotos", icon: "image-outline", screen: "Fotos", color: theme['color-success-500'] },
-    { name: "Notas", icon: "edit-2-outline", screen: "Notas", color: theme['color-danger-500'] },
+    {
+      name: "Tablas",
+      icon: "grid-outline",
+      screen: "TableScreen",
+      color: theme["color-primary-500"],
+      description: "Crea y gestiona tablas de datos geológicos.",
+    },
+    {
+      name: "Fotos",
+      icon: "camera-outline",
+      screen: "PhotosScreen",
+      color: theme["color-success-500"],
+      description: "Captura y organiza fotos con ubicación geográfica.",
+    },
+    {
+      name: "Notas",
+      icon: "edit-2-outline",
+      screen: "NotesScreen",
+      color: theme["color-danger-500"],
+      description: "Crea y gestiona notas geológicas detalladas.",
+    },
+    {
+      name: "Informes",
+      icon: "file-text-outline",
+      screen: "ReportsScreen",
+      color: theme["color-warning-500"],
+      description: "Genera informes geológicos completos.",
+    },
+    {
+      name: "Datos Estructurales",
+      icon: "layers-outline",
+      screen: "StructuralDataScreen",
+      color: theme["color-info-500"],
+      description: "Analiza y registra datos estructurales.",
+    },
+    {
+      name: "Litología",
+      icon: "map-outline",
+      screen: "LithologyListScreen",
+      color: theme["color-basic-800"],
+      description: "Explora y gestiona columnas litológicas.",
+    },
   ];
 
   const renderFeatureCard = (feature, index) => (
     <Animated.View
       key={index}
-      style={[
-        styles.featureCardContainer,
-        {
-          opacity: fadeAnim,
-          transform: [
-            {
-              translateY: fadeAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [50, 0],
-              }),
-            },
-          ],
-        },
-      ]}
+      entering={FadeInUp.delay(index * 200).duration(800)}
+      style={styles.featureCardContainer}
     >
-      <Card style={[styles.featureCard, { backgroundColor: feature.color }]}>
-        <Icon name={feature.icon} fill={theme['color-basic-100']} style={styles.featureIcon} />
-        <Text category='h6' style={styles.featureTitle}>{feature.name}</Text>
+      <Card
+        style={[styles.featureCard, { backgroundColor: feature.color }]}
+        onPress={() => navigation.navigate(feature.screen)}
+      >
+        <Icon name={feature.icon} fill={theme["color-basic-100"]} style={styles.featureIcon} />
+        <Text category="h6" style={styles.featureTitle}>
+          {feature.name}
+        </Text>
+        <Text category="s1" style={styles.featureDescription}>
+          {feature.description}
+        </Text>
         <Button
-          appearance='filled'
+          appearance="filled"
           onPress={() => navigation.navigate(feature.screen)}
           style={styles.button}
-          size='small'
+          size="small"
+          accessoryRight={(props) => <Icon {...props} name="arrow-forward-outline" />}
         >
-          Explorar
+          Ver más
         </Button>
       </Card>
     </Animated.View>
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme['background-basic-color-1'] }}>
-      <TopNavigation title='GeoApp' alignment='center' />
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme["background-basic-color-1"] }}>
+      <TopNavigation title="GeoApp" alignment="center" />
       <Layout style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollView}>
-          <Layout style={styles.header}>
-            <Icon name='globe-2-outline' fill={theme['color-primary-500']} style={styles.headerIcon} />
-            <Text category='h1' style={styles.title}>GeoApp</Text>
-            <Text category='s1' style={styles.subtitle}>
+          {/* Título con animación */}
+          <Animated.View entering={FadeInDown.duration(800)}>
+            <Text category="h1" style={styles.title}>
+              GeoApp
+            </Text>
+            <Text category="s1" style={styles.subtitle}>
               Tu asistente geológico de campo
             </Text>
-          </Layout>
-          <Layout style={styles.featuresContainer}>
-            {features.map(renderFeatureCard)}
-          </Layout>
+          </Animated.View>
+
+          {/* Tarjetas de funcionalidades */}
+          <Layout style={styles.featuresContainer}>{features.map(renderFeatureCard)}</Layout>
         </ScrollView>
       </Layout>
     </SafeAreaView>
@@ -81,51 +111,55 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flexGrow: 1,
-    padding: 20,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  headerIcon: {
-    width: 80,
-    height: 80,
+    padding: 16,
   },
   title: {
-    textAlign: 'center',
+    textAlign: "center",
     marginVertical: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   subtitle: {
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.8,
+    marginBottom: 24,
   },
   featuresContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
   featureCardContainer: {
-    width: '48%',
+    width: "48%", // Dos tarjetas por fila
     marginBottom: 16,
   },
   featureCard: {
-    borderRadius: 16,
-    alignItems: 'center',
-    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    padding: 12,
+    height: 180, // Altura fija para todas las tarjetas
   },
   featureIcon: {
-    width: 48,
-    height: 48,
-    marginBottom: 12,
+    width: 32,
+    height: 32,
+    marginBottom: 8,
   },
   featureTitle: {
-    color: 'white',
-    marginBottom: 12,
-    textAlign: 'center',
+    color: "white",
+    marginBottom: 4,
+    textAlign: "center",
+    fontSize: 16,
+  },
+  featureDescription: {
+    color: "white",
+    opacity: 0.8,
+    textAlign: "center",
+    fontSize: 12,
+    marginBottom: 8,
   },
   button: {
     borderRadius: 20,
-    minWidth: 120,
+    minWidth: 100,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "transparent",
   },
 });

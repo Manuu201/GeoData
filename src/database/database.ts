@@ -7,11 +7,12 @@ export interface ItemEntity {
 }
 
 export interface NoteEntity {
-  photos: string;
-  tables: string;
   id: number;
   title: string;
   content: string;
+  photos: string; // JSON string
+  tables: string; // JSON string
+  createdAt: string; // Nuevo campo para la fecha de creación
 }
 
 export interface PhotoEntity {
@@ -124,33 +125,60 @@ export async function fetchItemsAsync(db: SQLiteDatabase): Promise<{ todoItems: 
 /**
  * CRUD de Notas
  */
-export async function addNoteAsync(db: SQLiteDatabase, title: string, content: string, photos: PhotoEntity[] = [], tables: TableEntity[] = []): Promise<void> {
-  if (title !== '' && content !== '') {
+export async function addNoteAsync(
+  db: SQLiteDatabase,
+  title: string,
+  content: string,
+  photos: PhotoEntity[] = [],
+  tables: TableEntity[] = []
+): Promise<void> {
+  if (title !== "" && content !== "") {
     const photosJson = JSON.stringify(photos);
     const tablesJson = JSON.stringify(tables);
-    await db.runAsync('INSERT INTO notes (title, content, photos, tables) VALUES (?, ?, ?, ?);', title, content, photosJson, tablesJson);
+    const createdAt = new Date().toISOString(); // Fecha actual en formato ISO
+    await db.runAsync(
+      "INSERT INTO notes (title, content, photos, tables, createdAt) VALUES (?, ?, ?, ?, ?);",
+      title,
+      content,
+      photosJson,
+      tablesJson,
+      createdAt
+    );
   }
 }
-
 export async function fetchNotesAsync(db: SQLiteDatabase): Promise<NoteEntity[]> {
-  const notes = await db.getAllAsync<NoteEntity>('SELECT * FROM notes;');
-  return notes.map(note => ({
+  const notes = await db.getAllAsync<NoteEntity>("SELECT * FROM notes;");
+  return notes.map((note) => ({
     ...note,
     photos: note.photos ? JSON.parse(note.photos) : [],
     tables: note.tables ? JSON.parse(note.tables) : [],
+    createdAt: note.createdAt || new Date().toISOString(), // Si no existe, se asigna la fecha actual
   }));
 }
 
 
-
-export async function updateNoteAsync(db: SQLiteDatabase, id: number, title: string, content: string, photos: PhotoEntity[] = [], tables: TableEntity[] = []): Promise<void> {
+export async function updateNoteAsync(
+  db: SQLiteDatabase,
+  id: number,
+  title: string,
+  content: string,
+  photos: PhotoEntity[] = [],
+  tables: TableEntity[] = []
+): Promise<void> {
   const photosJson = JSON.stringify(photos);
   const tablesJson = JSON.stringify(tables);
-  await db.runAsync('UPDATE notes SET title = ?, content = ?, photos = ?, tables = ? WHERE id = ?;', title, content, photosJson, tablesJson, id);
+  await db.runAsync(
+    "UPDATE notes SET title = ?, content = ?, photos = ?, tables = ? WHERE id = ?;",
+    title,
+    content,
+    photosJson,
+    tablesJson,
+    id
+  );
 }
 
 export async function deleteNoteAsync(db: SQLiteDatabase, id: number): Promise<void> {
-  await db.runAsync('DELETE FROM notes WHERE id = ?;', id);
+  await db.runAsync("DELETE FROM notes WHERE id = ?;", id);
 }
 /**
  * CRUD de Fotos
@@ -573,7 +601,7 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
         content TEXT,
         photos TEXT DEFAULT '[]',
         tables TEXT DEFAULT '[]',
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        createdAt TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS photos (

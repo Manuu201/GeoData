@@ -21,5 +21,8 @@ export type RootStackParamList = {
   LithologyListScreen: undefined
   CreateColumnScreen: undefined
   LithologyFormScreen: { columnId: number }
+  HubScreen: undefined
+  PhotosScreen: undefined
+  TableScreen: undefined
 }
 

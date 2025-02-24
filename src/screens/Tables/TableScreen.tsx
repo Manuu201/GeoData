@@ -5,8 +5,9 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { TableEntity, fetchTablesAsync, addTableAsync, deleteTableAsync } from "../../database/database";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Card, Text, Input, Button, Icon, Layout, useTheme, Modal, Spinner } from "@ui-kitten/components";
+import { Card, Text, Input, Button, Icon, Layout, useTheme, Modal, Spinner, TopNavigation, TopNavigationAction, Divider } from "@ui-kitten/components";
 import type { RootStackParamList } from "../../navigation/types";
+import { Snackbar } from "react-native-paper";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -33,7 +34,6 @@ export default function TableScreen() {
   const db = useSQLiteContext();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "TableEditorScreen">>();
   const [tables, setTables] = useState<TableEntity[]>([]);
-  const [sortedTables, setSortedTables] = useState<TableEntity[]>([]);
   const [newTableName, setNewTableName] = useState("");
   const [newTableRows, setNewTableRows] = useState("");
   const [newTableColumns, setNewTableColumns] = useState("");
@@ -42,10 +42,11 @@ export default function TableScreen() {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState<{ field: string; message: string } | null>(null);
-  const [sortBy, setSortBy] = useState<"name" | "date">("date");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [page, setPage] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof predefinedTemplates | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortByDate, setSortByDate] = useState(false);
+  const [filter, setFilter] = useState<"today" | "week" | "month" | "all">("all");
+  const [page, setPage] = useState(0);
   const theme = useTheme();
 
   useFocusEffect(
@@ -57,30 +58,44 @@ export default function TableScreen() {
   async function fetchTables() {
     const allTables = await fetchTablesAsync(db);
     setTables(allTables);
-    sortTables(allTables, sortBy, sortOrder);
     setPage(0);
   }
 
-  function sortTables(data: TableEntity[], by: "name" | "date", order: "asc" | "desc") {
-    const sorted = [...data].sort((a, b) => {
-      if (by === "name") {
-        return order === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-      } else {
-        return order === "asc" ? a.created_at.localeCompare(b.created_at) : b.created_at.localeCompare(a.created_at);
-      }
-    });
+  const getFilteredTables = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    setSortedTables(sorted);
-  }
+    return tables
+      .filter((table) => {
+        const createdAt = new Date(table.created_at);
+        switch (filter) {
+          case "today":
+            return createdAt >= today;
+          case "week":
+            return createdAt >= startOfWeek;
+          case "month":
+            return createdAt >= startOfMonth;
+          default:
+            return true;
+        }
+      })
+      .filter((table) => table.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      .sort((a, b) => {
+        if (sortByDate) {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+        return a.name.localeCompare(b.name);
+      });
+  };
 
-  function toggleSort(by: "name" | "date") {
-    const newOrder = sortOrder === "asc" ? "desc" : "asc";
-    setSortBy(by);
-    setSortOrder(newOrder);
-    sortTables(tables, by, newOrder);
-  }
+  const filteredTables = getFilteredTables();
+  const totalPages = Math.ceil(filteredTables.length / ITEMS_PER_PAGE);
+  const currentTables = filteredTables.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
 
-  async function handleAddTable() {
+  const handleAddTable = async () => {
     const rows = Number.parseInt(newTableRows, 10);
     const columns = Number.parseInt(newTableColumns, 10);
 
@@ -114,17 +129,14 @@ export default function TableScreen() {
     setSnackbarMessage("Tabla agregada exitosamente");
     setSnackbarVisible(true);
     setErrorMessage(null);
-  }
+  };
 
-  async function handleDeleteTable(id: number) {
+  const handleDeleteTable = async (id: number) => {
     await deleteTableAsync(db, id);
     fetchTables();
     setSnackbarMessage("Tabla eliminada exitosamente");
     setSnackbarVisible(true);
-  }
-
-  const totalPages = Math.ceil(sortedTables.length / ITEMS_PER_PAGE);
-  const currentTables = sortedTables.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
+  };
 
   const predefinedTemplates = {
     "Roca Sedimentaria": {
@@ -158,40 +170,77 @@ export default function TableScreen() {
     setErrorMessage(null);
   };
 
-  return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme['background-basic-color-1'] }]}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
-        <Text category="h1" style={styles.title}>Tablas Geológicas</Text>
+  const FilterButton = ({ label, active, onPress }) => (
+    <Button
+      appearance={active ? "filled" : "outline"}
+      size="small"
+      status="basic"
+      onPress={onPress}
+      style={{ marginRight: 8 }}
+    >
+      {label}
+    </Button>
+  );
 
-        <View style={styles.sortContainer}>
-          <Button appearance="ghost" onPress={() => toggleSort("name")}>
-            {`Ordenar por Nombre ${sortBy === "name" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-          </Button>
-          <Button appearance="ghost" onPress={() => toggleSort("date")}>
-            {`Ordenar por Fecha ${sortBy === "date" ? (sortOrder === "asc" ? "↑" : "↓") : ""}`}
-          </Button>
-        </View>
+  const Filters = () => (
+    <Layout style={{ flexDirection: "row", marginBottom: 16 }}>
+      <FilterButton label="Hoy" active={filter === "today"} onPress={() => setFilter("today")} />
+      <FilterButton label="Esta semana" active={filter === "week"} onPress={() => setFilter("week")} />
+      <FilterButton label="Este mes" active={filter === "month"} onPress={() => setFilter("month")} />
+      <FilterButton label="Todos" active={filter === "all"} onPress={() => setFilter("all")} />
+    </Layout>
+  );
+
+  const SortIcon = (props) => <Icon {...props} name={sortByDate ? "calendar" : "calendar-outline"} />;
+  const AddIcon = (props) => <Icon {...props} name="plus-outline" />;
+
+  return (
+    <SafeAreaView style={styles(theme).safeArea}>
+      <TopNavigation
+        title="Tablas Geológicas"
+        alignment="center"
+        accessoryRight={() => (
+          <TopNavigationAction icon={AddIcon} onPress={() => setIsDialogVisible(true)} />
+        )}
+      />
+      <Divider />
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles(theme).container}>
+        <Input
+          placeholder="Buscar tablas..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          accessoryLeft={(props) => <Icon {...props} name="search" />}
+          style={styles(theme).searchInput}
+        />
+        <Filters />
+        <Button
+          appearance="ghost"
+          status="basic"
+          accessoryLeft={SortIcon}
+          onPress={() => setSortByDate(!sortByDate)}
+          style={styles(theme).sortButton}
+        >
+          {sortByDate ? "Ordenado por fecha" : "Ordenar por fecha"}
+        </Button>
 
         <FlatList
           data={currentTables}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={styles(theme).listContent}
           renderItem={({ item }) => (
             <Card
-              style={styles.tableCard}
+              style={styles(theme).tableCard}
               onPress={() => navigation.navigate("TableEditorScreen", { table: item, onSave: fetchTables })}
             >
-              <View>
-                <Text category="h6" style={styles.tableName}>{item.name}</Text>
-                <Text category="s1" style={styles.tableInfo}>
-                  {item.rows} Filas | {item.columns} Columnas
-                </Text>
-              </View>
-              <View style={styles.cardActions}>
-                <Button appearance="outline" onPress={() => navigation.navigate("TableEditorScreen", { table: item, onSave: fetchTables })}>
+              <Text category="h6">{item.name}</Text>
+              <Text category="s1" appearance="hint">
+                {item.rows} Filas | {item.columns} Columnas
+              </Text>
+              <View style={styles(theme).cardActions}>
+                <Button size="small" status="info" onPress={() => navigation.navigate("TableEditorScreen", { table: item, onSave: fetchTables })}>
                   Editar
                 </Button>
-                <Button appearance="outline" status="danger" onPress={() => handleDeleteTable(item.id)}>
+                <Button size="small" status="danger" onPress={() => handleDeleteTable(item.id)}>
                   Eliminar
                 </Button>
               </View>
@@ -199,7 +248,7 @@ export default function TableScreen() {
           )}
         />
 
-        <View style={styles.pagination}>
+        <View style={styles(theme).pagination}>
           <Button appearance="ghost" disabled={page === 0} onPress={() => setPage(page - 1)} accessoryLeft={<Icon name="chevron-left" />} />
           <Text>{page + 1} / {totalPages || 1}</Text>
           <Button appearance="ghost" disabled={page >= totalPages - 1} onPress={() => setPage(page + 1)} accessoryLeft={<Icon name="chevron-right" />} />
@@ -207,69 +256,111 @@ export default function TableScreen() {
 
         <Modal visible={isDialogVisible} onBackdropPress={() => setIsDialogVisible(false)}>
           <Card>
-            <View>
-              <Text category="h6">Agregar Tabla</Text>
-              <View style={styles.templateButtons}>
-                <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Sedimentaria")}>
-                  Usar Plantilla: Roca Sedimentaria
-                </Button>
-                <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Ígnea")}>
-                  Usar Plantilla: Roca Ígnea
-                </Button>
-              </View>
-
-              <MemoizedTextInput
-                label="Nombre"
-                value={newTableName}
-                onChangeText={setNewTableName}
-                error={errorMessage?.field === "name"}
-              />
-              {errorMessage?.field === "name" && <Text status="danger" style={styles.errorText}>{errorMessage.message}</Text>}
-
-              <MemoizedTextInput
-                label="Filas"
-                value={newTableRows}
-                onChangeText={setNewTableRows}
-                keyboardType="numeric"
-                error={errorMessage?.field === "rows"}
-              />
-              {errorMessage?.field === "rows" && <Text status="danger" style={styles.errorText}>{errorMessage.message}</Text>}
-
-              <MemoizedTextInput
-                label="Columnas"
-                value={newTableColumns}
-                onChangeText={setNewTableColumns}
-                keyboardType="numeric"
-                error={errorMessage?.field === "columns"}
-              />
-              {errorMessage?.field === "columns" && <Text status="danger" style={styles.errorText}>{errorMessage.message}</Text>}
+            <Text category="h6">Agregar Tabla</Text>
+            <View style={styles(theme).templateButtons}>
+              <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Sedimentaria")}>
+                Usar Plantilla: Roca Sedimentaria
+              </Button>
+              <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Ígnea")}>
+                Usar Plantilla: Roca Ígnea
+              </Button>
             </View>
-            <View style={styles.cardActions}>
+
+            <MemoizedTextInput
+              label="Nombre"
+              value={newTableName}
+              onChangeText={setNewTableName}
+              error={errorMessage?.field === "name"}
+            />
+            {errorMessage?.field === "name" && <Text status="danger" style={styles(theme).errorText}>{errorMessage.message}</Text>}
+
+            <MemoizedTextInput
+              label="Filas"
+              value={newTableRows}
+              onChangeText={setNewTableRows}
+              keyboardType="numeric"
+              error={errorMessage?.field === "rows"}
+            />
+            {errorMessage?.field === "rows" && <Text status="danger" style={styles(theme).errorText}>{errorMessage.message}</Text>}
+
+            <MemoizedTextInput
+              label="Columnas"
+              value={newTableColumns}
+              onChangeText={setNewTableColumns}
+              keyboardType="numeric"
+              error={errorMessage?.field === "columns"}
+            />
+            {errorMessage?.field === "columns" && <Text status="danger" style={styles(theme).errorText}>{errorMessage.message}</Text>}
+
+            <View style={styles(theme).cardActions}>
               <Button appearance="ghost" onPress={() => setIsDialogVisible(false)}>Cancelar</Button>
               <Button onPress={handleAddTable}>Agregar</Button>
             </View>
           </Card>
         </Modal>
 
-        <Button style={styles.fab} accessoryLeft={<Icon name="plus" />} onPress={() => setIsDialogVisible(true)} />
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={3000}
+          style={styles(theme).snackbar}
+        >
+          {snackbarMessage}
+        </Snackbar>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  container: { flex: 1, padding: 16 },
-  title: { textAlign: "center", marginBottom: 16 },
-  sortContainer: { flexDirection: "row", justifyContent: "space-around", marginBottom: 10 },
-  list: { paddingBottom: 16 },
-  tableCard: { marginBottom: 12 },
-  tableName: { marginBottom: 4 },
-  tableInfo: { color: "gray" },
-  pagination: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 10 },
-  fab: { position: "absolute", right: 16, bottom: 16 },
-  templateButtons: { flexDirection: "column", marginBottom: 10 },
-  input: { marginBottom: 10 },
-  errorText: { marginTop: 4 },
-  cardActions: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
-});
+const styles = (theme) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme["background-basic-color-1"],
+    },
+    container: {
+      flex: 1,
+      padding: 16,
+      backgroundColor: theme["background-basic-color-1"],
+    },
+    searchInput: {
+      marginBottom: 16,
+    },
+    sortButton: {
+      marginBottom: 16,
+    },
+    listContent: {
+      paddingBottom: 80,
+    },
+    tableCard: {
+      marginBottom: 16,
+      backgroundColor: theme["background-basic-color-2"],
+    },
+    cardActions: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: 8,
+    },
+    pagination: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 10,
+    },
+    templateButtons: {
+      flexDirection: "column",
+      marginBottom: 10,
+    },
+    input: {
+      marginBottom: 10,
+    },
+    errorText: {
+      marginTop: 4,
+    },
+    snackbar: {
+      position: "absolute",
+      bottom: 80,
+      left: 16,
+      right: 16,
+    },
+  });
