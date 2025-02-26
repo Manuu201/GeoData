@@ -38,10 +38,9 @@ export interface NoteAttachmentEntity {
   type: 'photo' | 'table';
   attachment_id: number;
 }
-
 export interface ReportEntity {
   id: number;
-  type: 'sedimentary' | 'igneous' | 'free'; // Tipo de roca
+  type: 'sedimentary' | 'igneous' | 'metamorphic' | 'free'; // Tipo de roca
   title: string; // Título del reporte
   photoUri?: string; // URI de la foto
   latitude?: number; // Latitud de la foto
@@ -319,6 +318,7 @@ export async function deleteNoteAttachmentAsync(db: SQLiteDatabase, id: number):
 
 
 
+// Agregar un nuevo reporte
 export async function addReportAsync(db: SQLiteDatabase, report: Omit<ReportEntity, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
   const createdAt = new Date().toISOString();
   const updatedAt = createdAt;
@@ -328,25 +328,51 @@ export async function addReportAsync(db: SQLiteDatabase, report: Omit<ReportEnti
       `INSERT INTO reports (
         type, title, photoUri, latitude, longitude, text1, text2, tableData, createdAt, updatedAt
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-      report.type, report.title, report.photoUri, report.latitude, report.longitude, report.text1, report.text2, report.tableData, createdAt, updatedAt
+      [
+        report.type,
+        report.title,
+        report.photoUri || null,
+        report.latitude || null,
+        report.longitude || null,
+        report.text1 || null,
+        report.text2 || null,
+        report.tableData || null,
+        createdAt,
+        updatedAt,
+      ]
     );
-    console.log('Reporte agregado correctamente:', report); // Verifica los datos insertados
+    console.log('Reporte agregado correctamente:', report);
   } catch (error) {
     console.error('Error al agregar el reporte:', error);
+    throw error; // Lanzar el error para manejarlo en el código que llama a esta función
   }
 }
 
+// Recuperar todos los reportes
 export async function fetchReportsAsync(db: SQLiteDatabase): Promise<ReportEntity[]> {
   try {
     const reports = await db.getAllAsync<ReportEntity>('SELECT * FROM reports;');
-    console.log('Reportes recuperados:', reports); // Verifica los datos recuperados
+    console.log('Reportes recuperados:', reports);
     return reports;
   } catch (error) {
     console.error('Error al recuperar los reportes:', error);
-    return [];
+    throw error; // Lanzar el error para manejarlo en el código que llama a esta función
   }
 }
 
+// Recuperar un reporte por su ID
+export async function fetchReportByIdAsync(db: SQLiteDatabase, id: number): Promise<ReportEntity | null> {
+  try {
+    const report = await db.getFirstAsync<ReportEntity>('SELECT * FROM reports WHERE id = ?;', [id]);
+    console.log('Reporte recuperado por ID:', report);
+    return report || null;
+  } catch (error) {
+    console.error('Error al recuperar el reporte por ID:', error);
+    throw error; // Lanzar el error para manejarlo en el código que llama a esta función
+  }
+}
+
+// Actualizar un reporte
 export async function updateReportAsync(db: SQLiteDatabase, report: ReportEntity): Promise<void> {
   const updatedAt = new Date().toISOString();
 
@@ -355,23 +381,36 @@ export async function updateReportAsync(db: SQLiteDatabase, report: ReportEntity
       `UPDATE reports SET
         type = ?, title = ?, photoUri = ?, latitude = ?, longitude = ?, text1 = ?, text2 = ?, tableData = ?, updatedAt = ?
       WHERE id = ?;`,
-      report.type, report.title, report.photoUri, report.latitude, report.longitude, report.text1, report.text2, report.tableData, updatedAt, report.id
+      [
+        report.type,
+        report.title,
+        report.photoUri || null,
+        report.latitude || null,
+        report.longitude || null,
+        report.text1 || null,
+        report.text2 || null,
+        report.tableData || null,
+        updatedAt,
+        report.id,
+      ]
     );
     console.log('Reporte actualizado correctamente');
   } catch (error) {
     console.error('Error al actualizar el reporte:', error);
+    throw error; // Lanzar el error para manejarlo en el código que llama a esta función
   }
 }
 
+// Eliminar un reporte
 export async function deleteReportAsync(db: SQLiteDatabase, id: number): Promise<void> {
   try {
-    await db.runAsync('DELETE FROM reports WHERE id = ?;', id);
+    await db.runAsync('DELETE FROM reports WHERE id = ?;', [id]);
     console.log('Reporte eliminado correctamente');
   } catch (error) {
     console.error('Error al eliminar el reporte:', error);
+    throw error; // Lanzar el error para manejarlo en el código que llama a esta función
   }
 }
-
 
 export async function addLithologyAsync(
   db: SQLiteDatabase,

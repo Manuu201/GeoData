@@ -1,11 +1,18 @@
 import React from "react";
 import { ScrollView, StyleSheet } from "react-native";
-import { Layout, Text, Card, Button, Icon, TopNavigation, useTheme } from "@ui-kitten/components";
+import { Layout, Text, Card, Button, Icon, TopNavigation, useTheme, TopNavigationAction } from "@ui-kitten/components";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 export default function HomeScreen({ navigation }) {
   const theme = useTheme();
+
+  // Acción para el ícono de engranaje
+  const SettingsIcon = (props) => <Icon {...props} name="settings-outline" />;
+
+  const SettingsAction = () => (
+    <TopNavigationAction icon={SettingsIcon} onPress={() => navigation.navigate("SettingsScreen")} />
+  );
 
   const features = [
     {
@@ -84,7 +91,12 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme["background-basic-color-1"] }}>
-      <TopNavigation title="GeoApp" alignment="center" />
+      {/* TopNavigation con el ícono de engranaje */}
+      <TopNavigation
+        title="GeoApp"
+        alignment="center"
+        accessoryRight={SettingsAction} // Agrega el ícono de engranaje
+      />
       <Layout style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollView}>
           {/* Título con animación */}
@@ -136,7 +148,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     padding: 12,
-    height: 180, // Altura fija para todas las tarjetas
+    height: 190, // Altura fija para todas las tarjetas
   },
   featureIcon: {
     width: 32,

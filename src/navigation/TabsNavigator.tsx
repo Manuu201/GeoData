@@ -26,6 +26,7 @@ import LithologyFormScreen from "../screens/Litologic/LithologyFormScreen"
 import LithologyDetailScreen from "../screens/Litologic/LithologyDetailScreen"
 import CreateColumnScreen from "../screens/Litologic/CreateColumnScreen"
 import HubScreen from "../screens/HubScreen"
+import SettingScreen from "../screens/SettingsScreen"
 
 const Tab = createBottomTabNavigator()
 const Stack = createStackNavigator()
@@ -116,6 +117,7 @@ const AppNavigator = () => (
           <Stack.Screen name="PhotoSelectorScreen" component={PhotoSelectorScreen} options={{ title: "Ver Fotos Estructurales" }} />
           <Stack.Screen name="LithologyListScreen" component={LithologyListScreen} options={{ title: "Ver Lista Litologica" }} />
           <Stack.Screen name="ReportsScreen" component={ReportsScreen} options={{ title: "Ver Reportes" }} />
+          <Stack.Screen name="SettingsScreen" component={SettingScreen} options={{ title: "Ver Configuraciones" }} />
         </Stack.Navigator>
       </NavigationContainer>
     </ApplicationProvider>
