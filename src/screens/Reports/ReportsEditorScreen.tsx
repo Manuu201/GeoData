@@ -350,53 +350,58 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
 
   const generateHTMLContent = (type, title, dynamicTextsValues, tableData, photoBase64, diagramBase64, latitude, longitude, mineralData, text2) => {
     const commonStyles = `
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          margin: 20px;
-          padding: 20px;
-          background-color: #f9f9f9;
-        }
-        h1 {
-          color: #333;
-          text-align: center;
-          margin-bottom: 20px;
-        }
-        h2 {
-          color: #555;
-          margin-top: 20px;
-          margin-bottom: 10px;
-        }
-        p {
-          color: #666;
-          margin-bottom: 10px;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 20px;
-        }
-        th, td {
-          border: 1px solid #ddd;
-          padding: 8px;
-          text-align: left;
-        }
-        th {
-          background-color: #f2f2f2;
-          color: #333;
-        }
-        img {
-          max-width: 100%;
-          height: auto;
-          margin-bottom: 20px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-        }
-        .section {
-          margin-bottom: 30px;
-        }
-      </style>
-    `;
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        padding: 20px;
+        background-color: #f9f9f9;
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      h2 {
+        color: #555;
+        margin-top: 20px;
+        margin-bottom: 10px;
+      }
+      p {
+        color: #666;
+        margin-bottom: 10px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+        color: #333;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+        margin: 20px 0; /* Agregar margen superior e inferior */
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        display: block; /* Asegurar que la imagen no tenga espacio extra alrededor */
+      }
+      .section {
+        margin-bottom: 30px;
+      }
+      .image-container {
+        margin: 20px 0; /* Espacio adicional para el contenedor de la imagen */
+        text-align: center; /* Centrar la imagen */
+      }
+    </style>
+  `;
   
     let htmlContent = `
       <html>
