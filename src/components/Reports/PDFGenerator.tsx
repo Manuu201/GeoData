@@ -74,51 +74,86 @@ const PDFGenerator = ({
       photoBase64 = await getPhotoBase64(photoUri);
     }
 
+    const now = new Date();
+    const formattedDate = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
+
     const commonStyles = `
       <style>
         body {
-          font-family: Arial, sans-serif;
+          font-family: 'Arial', sans-serif;
           margin: 20px;
           padding: 20px;
-          background-color: #f9f9f9;
+          background-color: #ffffff;
+          color: #333;
         }
         h1 {
-          color: #333;
+          color: #2c3e50;
           text-align: center;
           margin-bottom: 20px;
+          font-size: 24px;
+          font-weight: bold;
         }
         h2 {
-          color: #555;
+          color: #34495e;
           margin-top: 20px;
           margin-bottom: 10px;
+          font-size: 18px;
+          font-weight: bold;
+          border-bottom: 2px solid #3498db;
+          padding-bottom: 5px;
         }
         p {
-          color: #666;
+          color: #555;
           margin-bottom: 10px;
+          line-height: 1.6;
         }
         table {
           width: 100%;
           border-collapse: collapse;
           margin-bottom: 20px;
+          background-color: #f9f9f9;
+          border-radius: 8px;
+          overflow: hidden;
         }
         th, td {
           border: 1px solid #ddd;
-          padding: 8px;
+          padding: 12px;
           text-align: left;
         }
         th {
+          background-color: #3498db;
+          color: #fff;
+          font-weight: bold;
+        }
+        tr:nth-child(even) {
           background-color: #f2f2f2;
-          color: #333;
         }
         img {
           max-width: 100%;
           height: auto;
           margin-bottom: 20px;
           border: 1px solid #ddd;
-          border-radius: 4px;
+          border-radius: 8px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
         .section {
           margin-bottom: 30px;
+          padding: 20px;
+          background-color: #fff;
+          border-radius: 8px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+        }
+        .header p {
+          color: #777;
+          font-size: 14px;
+        }
+        .highlight {
+          color: #e74c3c;
+          font-weight: bold;
         }
       </style>
     `;
@@ -129,7 +164,10 @@ const PDFGenerator = ({
           ${commonStyles}
         </head>
         <body>
-          <h1>Reporte de ${type === "free" ? "Libre" : `Roca ${type}`}: ${title}</h1>
+          <div class="header">
+            <h1>Reporte de ${type === "free" ? "Libre" : `Roca ${type}`}: ${title}</h1>
+            <p>Fecha de generación: <span class="highlight">${formattedDate}</span></p>
+          </div>
     `;
 
     if (type !== "free") {
@@ -146,20 +184,33 @@ const PDFGenerator = ({
     if (type === "igneous" && mineralData) {
       let rockType = "";
       const { Q, A, P } = mineralData;
-      if (Q > 90) rockType = "Granito";
-      else if (Q > 20 && A > 65) rockType = "Sienita";
-      else if (Q > 20 && P > 65) rockType = "Diorita";
-      else if (Q > 20 && A > 10 && P > 10) rockType = "Granodiorita";
-      else if (Q > 20 && A < 10 && P < 10) rockType = "Tonalita";
+    
+      // Normalizar los valores de Q, A y P para que sumen 100%
+      const total = Q + A + P;
+      const normalizedQ = (Q / total) * 100;
+      const normalizedA = (A / total) * 100;
+      const normalizedP = (P / total) * 100;
+    
+      // Determinación del tipo de roca
+      if (normalizedQ > 90) rockType = "Granitoides ricos en cuarzo";
+      else if (normalizedQ > 60 && normalizedA > 20) rockType = "Granito Feld. Alcalinico (0-20)";
+      else if (normalizedQ > 40 && normalizedA > 20) rockType = "Sienogranito (5-20) Monzogranito (5-20)";
+      else if (normalizedQ > 20 && normalizedA > 20) rockType = "Granodiorita (5-25)";
+      else if (normalizedQ > 10 && normalizedA > 10) rockType = "Tonalita (10-40) Trondhjemia (0-10)";
+      else if (normalizedQ > 5 && normalizedA > 5) rockType = "Czo-Sienita Feld. Alcal. (0-25)";
+      else if (normalizedQ > 5 && normalizedA > 5) rockType = "Czo-Sienita (5-30)";
+      else if (normalizedQ > 10 && normalizedA > 10) rockType = "Czo-Monzonita (10-35)";
+      else if (normalizedQ > 10 && normalizedA > 10) rockType = "Czo-Monzodiorita (10-35) Czo-Monzogabro (20-50)";
+      else if (normalizedQ > 20 && normalizedA > 20) rockType = "Czo-Diorita (20-45) Czo-Gabro (25-65)";
       else rockType = "Roca no clasificada";
-
+    
       htmlContent += `
         <div class="section">
           <h2>Diagrama de Streckeisen</h2>
-          <p><strong>Tipo de Roca:</strong> ${rockType}</p>
-          <p>Cuarzo (Q): ${Q.toFixed(1)}%</p>
-          <p>Feldespato (A): ${A.toFixed(1)}%</p>
-          <p>Plagioclasa (P): ${P.toFixed(1)}%</p>
+          <p><strong>Tipo de Roca:</strong> <span class="highlight">${rockType}</span></p>
+          <p>Cuarzo (Q): ${normalizedQ.toFixed(1)}%</p>
+          <p>Feldespato (A): ${normalizedA.toFixed(1)}%</p>
+          <p>Plagioclasa (P): ${normalizedP.toFixed(1)}%</p>
           ${diagramBase64 ? `<img src="${diagramBase64}" />` : ""}
         </div>
       `;
@@ -188,9 +239,8 @@ const PDFGenerator = ({
       `;
     }
 
-    // Mostrar el texto libre en todos los casos si está presente
     if (text2) {
-      const formattedText2 = text2.replace(/\n/g, "<br>"); // Reemplazar saltos de línea con <br>
+      const formattedText2 = text2.replace(/\n/g, "<br>");
       htmlContent += `
         <div class="section">
           <h2>Texto Libre</h2>
@@ -240,7 +290,7 @@ const PDFGenerator = ({
 
   return (
     <View style={styles.saveButton}>
-    <Button onPress={generatePDF} title="Exportar a PDF" />
+      <Button onPress={generatePDF} title="Exportar a PDF" />
     </View>
   );
 };

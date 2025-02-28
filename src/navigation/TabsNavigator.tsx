@@ -54,7 +54,7 @@ const BottomTabBar = ({ navigation, state }) => {
       }}
     >
       <BottomNavigationTab title="Inicio" icon={HomeIcon} />
-      <BottomNavigationTab title="Hub" icon={ReportIcon} />
+      {/*<BottomNavigationTab title="Hub" icon={ReportIcon} />*/}
       <BottomNavigationTab title="Tablas" icon={TableIcon} />
       <BottomNavigationTab title="Fotos" icon={PhotoIcon} />
       <BottomNavigationTab title="Notas" icon={NoteIcon} />
@@ -70,7 +70,7 @@ function TabNavigator() {
   return (
     <Tab.Navigator id={undefined} tabBar={(props) => <BottomTabBar {...props} />}>
       <Tab.Screen name="Inicio" component={HomeScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Hub" component={HubScreen} options={{ headerShown: false }} />
+      {/*<Tab.Screen name="Hub" component={HubScreen} options={{ headerShown: false }} />/*/}
       <Tab.Screen name="Tablas" component={TableScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Fotos" component={PhotosScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Notas" component={NotesScreen} options={{ headerShown: false }} />

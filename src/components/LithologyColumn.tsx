@@ -4,29 +4,55 @@ import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
 import rockTypes from '../data/rockTypes';
 import StructureTypes from '../data/structuralTypes';
 import FossilTypes from '../data/fossilTypes';
+
 const LithologyColumn = ({ layers, onDeleteLayer, onEditLayer, onMoveLayer }) => {
   const totalThickness = layers.reduce((sum, layer) => sum + layer.thickness, 0);
-  const scaleFactor = 10; // Factor de escala para convertir metros a píxeles
+  const scaleFactor = 15; // Factor de escala para convertir metros a píxeles
   const [selectedLayer, setSelectedLayer] = useState(null);
-  const [showDetail, setShowDetail] = useState(false); // Estado para mostrar el modal de detalles
+  const [showDetail, setShowDetail] = useState(false);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Column Lithology</Text>
       <Svg height={totalThickness * scaleFactor + 50} width="100%">
         {/* Eje Y */}
         <Line
-          x1="50"
+          x1="30" // Mover el eje Y más a la izquierda
           y1="0"
-          x2="50"
+          x2="30"
           y2={totalThickness * scaleFactor}
           stroke="#000"
           strokeWidth="2"
         />
 
+        {/* Marcas y etiquetas del eje Y */}
+        {layers.map((layer, index) => {
+          const y = layers.slice(0, index).reduce((sum, l) => sum + l.thickness, 0) * scaleFactor;
+          return (
+            <React.Fragment key={index}>
+              <Line
+                x1="25"
+                y1={y}
+                x2="35"
+                y2={y}
+                stroke="#000"
+                strokeWidth="2"
+              />
+              <SvgText
+                x="20"
+                y={y + 5}
+                fill="#000"
+                fontSize="10"
+                textAnchor="end"
+              >
+                {`${y / scaleFactor}m`}
+              </SvgText>
+            </React.Fragment>
+          );
+        })}
+
         {/* Eje X */}
         <Line
-          x1="50"
+          x1="30"
           y1={totalThickness * scaleFactor}
           x2="100%"
           y2={totalThickness * scaleFactor}
@@ -43,32 +69,60 @@ const LithologyColumn = ({ layers, onDeleteLayer, onEditLayer, onMoveLayer }) =>
             <React.Fragment key={index}>
               {/* Rectángulo que representa la capa */}
               <Rect
-                x="50"
+                x="30" // Mover las capas más a la izquierda
                 y={y}
-                width="80%"
+                width="40%" // Achicar el ancho de las capas
                 height={height}
                 fill={getColorForType(layer.type)}
+                stroke="#000"
+                strokeWidth="1"
                 onPress={() => setSelectedLayer(layer)}
               />
 
               {/* Etiqueta de la capa */}
               <SvgText
-                x="60"
+                x="40"
                 y={y + height / 2 + 5}
                 fill="#000"
                 fontSize="12"
+                fontWeight="bold"
               >
                 {`${layer.subtype} (${layer.thickness}m)`}
+              </SvgText>
+
+              {/* Imágenes de estructuras y fósiles */}
+              <Image
+                source={StructureTypes.find(struct => struct.structure === layer.structure)?.image}
+                style={[styles.structureImage, { top: y + height / 2 - 25 }]}
+              />
+              <Image
+                source={FossilTypes.find(fossil => fossil.fossil === layer.fossils)?.image}
+                style={[styles.fossilImage, { top: y + height / 2 - 25 }]}
+              />
+
+              {/* Etiquetas debajo de las imágenes */}
+              <SvgText
+                x="70%"
+                y={y + height / 2 + 30} // Ajustar la posición vertical de la etiqueta
+                fill="#000"
+                fontSize="10"
+                fontWeight="bold"
+              >
+                Estructura
+              </SvgText>
+              <SvgText
+                x="90%"
+                y={y + height / 2 + 30} // Ajustar la posición vertical de la etiqueta
+                fill="#000"
+                fontSize="10"
+                fontWeight="bold"
+              >
+                Fósiles
               </SvgText>
             </React.Fragment>
           );
         })}
       </Svg>
-
-      {/* Botón para ver más detalles */}
-      <TouchableOpacity style={styles.detailButton} onPress={() => setShowDetail(true)}>
-        <Text style={styles.detailButtonText}>Ver más</Text>
-      </TouchableOpacity>
 
       {/* Modal para mostrar la información de la capa */}
       <Modal
@@ -80,9 +134,9 @@ const LithologyColumn = ({ layers, onDeleteLayer, onEditLayer, onMoveLayer }) =>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{selectedLayer?.subtype}</Text>
-            <Text>Espesor: {selectedLayer?.thickness}m</Text>
-            <Text>Estructura: {selectedLayer?.structure}</Text>
-            <Text>Fósiles: {selectedLayer?.fossils}</Text>
+            <Text style={styles.modalText}>Espesor: {selectedLayer?.thickness}m</Text>
+            <Text style={styles.modalText}>Estructura: {selectedLayer?.structure}</Text>
+            <Text style={styles.modalText}>Fósiles: {selectedLayer?.fossils}</Text>
             <View style={styles.buttonContainer}>
               <TouchableOpacity
                 style={styles.modalButton}
@@ -198,22 +252,6 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 16,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  detailButton: {
-    backgroundColor: '#007bff',
-    padding: 10,
-    borderRadius: 5,
-    marginVertical: 8,
-    alignItems: 'center',
-  },
-  detailButtonText: {
-    color: '#fff',
-    fontSize: 14,
-  },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -230,6 +268,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 14,
+    marginBottom: 8,
   },
   buttonContainer: {
     marginTop: 10,
@@ -262,6 +305,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    textAlign: 'center',
   },
   legendItem: {
     marginBottom: 16,
@@ -285,6 +329,18 @@ const styles = StyleSheet.create({
   detailModalButtonText: {
     color: '#fff',
     fontSize: 14,
+  },
+  structureImage: {
+    position: 'absolute',
+    left: '70%',
+    width: 50,
+    height: 50,
+  },
+  fossilImage: {
+    position: 'absolute',
+    left: '90%',
+    width: 50,
+    height: 50,
   },
 });
 

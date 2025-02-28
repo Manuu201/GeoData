@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, Image, StyleSheet, Dimensions, Animated, PanResponder, TouchableOpacity } from "react-native";
-import { Layout, Text, Button, Icon, Input } from '@ui-kitten/components';
+import { View, Image, StyleSheet, Dimensions, TouchableOpacity, PanResponder } from "react-native";
+import { Layout, Text, Button, Icon, Input, Tooltip } from '@ui-kitten/components';
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import Svg, { Circle, Line, Text as SvgText, G, Path } from 'react-native-svg';
@@ -21,6 +21,7 @@ export default function StructuralDataScreen({ route }) {
   const [dipDir, setDipDir] = useState(45); // Valor inicial de dipDir (0-360 grados)
   const [imageScale, setImageScale] = useState(1); // Escala de la imagen
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 }); // Desplazamiento de la imagen
+  const [imageRotation, setImageRotation] = useState(0); // Rotación de la imagen
   const containerRef = useRef(null); // Referencia para capturar la imagen completa
 
   const { width, height } = Dimensions.get("window");
@@ -71,9 +72,30 @@ export default function StructuralDataScreen({ route }) {
     return (
       <Path
         d={`M ${startX} ${startY} A ${dipRadius} ${dipRadius} 0 0 1 ${endX} ${endY}`}
-        stroke="red"
+        stroke="#FF5733" // Color naranja para el dip
         strokeWidth={2}
         fill="none"
+      />
+    );
+  };
+
+  // Función para dibujar el plano imaginario
+  const drawImaginaryPlane = () => {
+    const angle = (dipDir - 90) * (Math.PI / 180);
+    const dipRadius = radius * (dip / 90);
+
+    const startX = centerX + dipRadius * Math.cos(angle);
+    const startY = centerY + dipRadius * Math.sin(angle);
+
+    return (
+      <Line
+        x1={centerX}
+        y1={centerY}
+        x2={startX}
+        y2={startY}
+        stroke="#33FF57" // Color verde para el plano imaginario
+        strokeWidth={2}
+        strokeDasharray="5,5" // Línea punteada
       />
     );
   };
@@ -100,7 +122,7 @@ export default function StructuralDataScreen({ route }) {
     }
   };
 
-  // Manejadores de gestos para mover y hacer zoom en la imagen
+  // Manejadores de gestos para mover, hacer zoom y rotar la imagen
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -126,6 +148,16 @@ export default function StructuralDataScreen({ route }) {
     })
   ).current;
 
+  const rotateResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        const newRotation = Math.atan2(gestureState.moveY - gestureState.y0, gestureState.moveX - gestureState.x0) * (180 / Math.PI);
+        setImageRotation(newRotation);
+      },
+    })
+  ).current;
+
   // Botones para mover la imagen
   const moveImage = (direction) => {
     const moveAmount = 20; // Cantidad de píxeles para mover la imagen
@@ -147,6 +179,28 @@ export default function StructuralDataScreen({ route }) {
     }
   };
 
+  // Botones para rotar la imagen
+  const rotateImage = (direction) => {
+    const rotateAmount = 10; // Cantidad de grados para rotar la imagen
+    switch (direction) {
+      case 'left':
+        setImageRotation((prev) => prev - rotateAmount);
+        break;
+      case 'right':
+        setImageRotation((prev) => prev + rotateAmount);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Botón para restaurar la imagen a su estado original
+  const resetImage = () => {
+    setImageScale(1);
+    setImageOffset({ x: 0, y: 0 });
+    setImageRotation(0);
+  };
+
   if (!photo) return <Text>Cargando...</Text>;
 
   return (
@@ -154,7 +208,7 @@ export default function StructuralDataScreen({ route }) {
       {/* Contenedor para capturar la imagen completa */}
       <View ref={containerRef} collapsable={false} style={styles.captureContainer}>
         {/* Imagen de fondo con gestos de zoom y arrastre */}
-        <Animated.View
+        <View
           style={[
             styles.imageContainer,
             {
@@ -162,13 +216,16 @@ export default function StructuralDataScreen({ route }) {
                 { translateX: imageOffset.x },
                 { translateY: imageOffset.y },
                 { scale: imageScale },
+                { rotate: `${imageRotation}deg` },
               ],
             },
           ]}
           {...panResponder.panHandlers}
+          {...pinchResponder.panHandlers}
+          {...rotateResponder.panHandlers}
         >
           <Image source={{ uri: photo.uri }} style={styles.image} resizeMode="contain" />
-        </Animated.View>
+        </View>
 
         {/* Red estereográfica */}
         <Svg style={styles.overlay}>
@@ -198,8 +255,17 @@ export default function StructuralDataScreen({ route }) {
               );
             })}
 
+            {/* Brújula */}
+            <SvgText x={centerX} y={centerY - radius - 30} fill="#333" textAnchor="middle">Norte</SvgText>
+            <SvgText x={centerX} y={centerY + radius + 30} fill="#333" textAnchor="middle">Sur</SvgText>
+            <SvgText x={centerX - radius - 30} y={centerY} fill="#333" textAnchor="middle">Oeste</SvgText>
+            <SvgText x={centerX + radius + 30} y={centerY} fill="#333" textAnchor="middle">Este</SvgText>
+
             {/* Curva de dip */}
             {drawDipCurve()}
+
+            {/* Plano imaginario */}
+            {drawImaginaryPlane()}
 
             {/* Punto indicador de dirección */}
             <Circle
@@ -224,6 +290,17 @@ export default function StructuralDataScreen({ route }) {
         <Button style={styles.moveButton} onPress={() => moveImage('down')}>⬇</Button>
         <Button style={styles.moveButton} onPress={() => moveImage('left')}>⬅</Button>
         <Button style={styles.moveButton} onPress={() => moveImage('right')}>➡</Button>
+      </View>
+
+      {/* Botones para rotar la imagen y restaurar */}
+      <View style={styles.rightButtons}>
+        <Button style={styles.rotateButton} onPress={() => rotateImage('left')}>↺</Button>
+        <Button style={styles.rotateButton} onPress={() => rotateImage('right')}>↻</Button>
+        <Button
+          style={styles.resetButton}
+          onPress={resetImage}
+          accessoryLeft={(props) => <Icon {...props} name="undo" fill="#FFF" />}
+        />
       </View>
 
       {/* Controles para ajustar Dip y DipDir */}
@@ -278,6 +355,19 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   moveButton: { marginVertical: 5 },
+  rightButtons: {
+    position: 'absolute',
+    top: 100,
+    right: 20,
+    flexDirection: 'column',
+  },
+  rotateButton: { marginVertical: 5 },
+  resetButton: {
+    marginVertical: 5,
+    backgroundColor: '#3366FF',
+    padding: 10,
+    borderRadius: 20,
+  },
   controls: {
     position: 'absolute',
     bottom: 20,

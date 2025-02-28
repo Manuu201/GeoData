@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, Image } from 'react-native';
-import { Button, Layout, Text, Input, List, ListItem, Modal, Card, Icon, Select, SelectItem, IndexPath } from '@ui-kitten/components';
+import { View, StyleSheet, FlatList, Image, Modal as RNModal, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { Button, Layout, Text, Input, Card, Icon } from '@ui-kitten/components';
 import { useSQLiteContext } from 'expo-sqlite';
 import { addLayerAsync, fetchLayersAsync, updateLayerAsync, deleteLayerAsync, LithologyLayerEntity, updateLayerOrderAsync } from '../../database/database';
 import LithologyColumn from '../../components/LithologyColumn';
 import rockTypes from '../../data/rockTypes';
-import structureTypes from '../../data/structuralTypes'; // Importar estructuras
-import fossilTypes from '../../data/fossilTypes'; // Importar fósiles
+import structureTypes from '../../data/structuralTypes';
+import fossilTypes from '../../data/fossilTypes';
+import RNPickerSelect from 'react-native-picker-select';
+
+const { width } = Dimensions.get('window');
 
 const SearchIcon = (props) => <Icon {...props} name="search-outline" />;
 const ArrowBackIcon = (props) => <Icon {...props} name="arrow-back" />;
@@ -18,29 +21,21 @@ const LithologyFormScreen = ({ route, navigation }) => {
   const [type, setType] = useState<'sedimentary' | 'igneous' | 'metamorphic'>('sedimentary');
   const [subtype, setSubtype] = useState('');
   const [thickness, setThickness] = useState('');
-  const [structure, setStructure] = useState(structureTypes[0].structure); // Inicializar con la primera estructura
-  const [fossil, setFossil] = useState(fossilTypes[0].fossil); // Inicializar con el primer fósil
+  const [structure, setStructure] = useState(structureTypes[0].structure);
+  const [fossil, setFossil] = useState(fossilTypes[0].fossil);
   const [layers, setLayers] = useState<LithologyLayerEntity[]>([]);
-  const [showForm, setShowForm] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
   const [editingLayer, setEditingLayer] = useState<LithologyLayerEntity | null>(null);
-
-  // Estados para el flujo secuencial
-  const [currentStep, setCurrentStep] = useState(1); // Paso actual
-  const [showModal, setShowModal] = useState(false); // Mostrar modal de pasos
-
-  // Estados independientes para la búsqueda
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showModal, setShowModal] = useState(false);
   const [searchQuerySubtype, setSearchQuerySubtype] = useState('');
   const [searchQueryStructure, setSearchQueryStructure] = useState('');
   const [searchQueryFossil, setSearchQueryFossil] = useState('');
-
-  // Estados para la paginación
   const [currentPageSubtype, setCurrentPageSubtype] = useState(0);
   const [currentPageStructure, setCurrentPageStructure] = useState(0);
   const [currentPageFossil, setCurrentPageFossil] = useState(0);
-  const itemsPerPage = 5; // Número de elementos por página
+  const itemsPerPage = 5;
 
-  // Cargar las capas de la columna
   useEffect(() => {
     const loadLayers = async () => {
       const layers = await fetchLayersAsync(db, columnId);
@@ -49,40 +44,37 @@ const LithologyFormScreen = ({ route, navigation }) => {
     loadLayers();
   }, [columnId]);
 
-  // Función para agregar o actualizar una capa
   const handleAddLayer = async () => {
     if (!subtype || !thickness || !structure || !fossil) {
       alert('Todos los campos son requeridos');
       return;
     }
-  
+
     const thicknessValue = parseFloat(thickness);
     if (thicknessValue > 20) {
       alert('El espesor debe ser de 20 metros o menos');
       return;
     }
-  
+
     if (editingLayer) {
       await updateLayerAsync(db, editingLayer.id, type, subtype, thicknessValue, structure, fossil);
       setEditingLayer(null);
     } else {
       await addLayerAsync(db, columnId, type, subtype, thicknessValue, structure, fossil);
     }
-  
+
     const updatedLayers = await fetchLayersAsync(db, columnId);
     setLayers(updatedLayers);
-    setShowModal(false); // Cerrar el modal después de agregar la capa
-    setCurrentStep(1); // Reiniciar el flujo
+    setShowModal(false);
+    setCurrentStep(1);
   };
 
-  // Función para eliminar una capa
   const handleDeleteLayer = async (id: number) => {
     await deleteLayerAsync(db, id);
     const updatedLayers = await fetchLayersAsync(db, columnId);
     setLayers(updatedLayers);
   };
 
-  // Función para editar una capa
   const handleEditLayer = (layer: LithologyLayerEntity) => {
     setType(layer.type);
     setSubtype(layer.subtype);
@@ -90,10 +82,9 @@ const LithologyFormScreen = ({ route, navigation }) => {
     setStructure(layer.structure);
     setFossil(layer.fossils);
     setEditingLayer(layer);
-    setShowModal(true); // Mostrar el modal para editar
+    setShowModal(true);
   };
 
-  // Función para mover una capa
   const handleMoveLayer = async (id: number, direction: 'up' | 'down') => {
     const index = layers.findIndex(layer => layer.id === id);
     if (index === -1) return;
@@ -101,42 +92,32 @@ const LithologyFormScreen = ({ route, navigation }) => {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= layers.length) return;
 
-    // Crear una copia de las capas
     const updatedLayers = [...layers];
-
-    // Intercambiar las capas
     [updatedLayers[index], updatedLayers[newIndex]] = [updatedLayers[newIndex], updatedLayers[index]];
-
-    // Recalcular el orden para todas las capas
     updatedLayers.forEach((layer, i) => {
-      layer.order = i + 1; // Actualizar el orden
+      layer.order = i + 1;
     });
 
-    // Actualizar el orden en la base de datos
     for (const layer of updatedLayers) {
       await updateLayerOrderAsync(db, layer.id, layer.order);
     }
 
-    // Actualizar el estado local
     setLayers(updatedLayers);
   };
 
-  // Función para filtrar elementos
   const filterItems = (items, query) => {
-    if (!items) return []; // Si items es undefined, devuelve un arreglo vacío
+    if (!items) return [];
     return items.filter(item => {
       const itemValue = item.subtype || item.structure || item.fossil;
       return itemValue && itemValue.toLowerCase().includes(query.toLowerCase());
     });
   };
 
-  // Función para obtener los elementos paginados
   const getPaginatedItems = (items, currentPage) => {
     const startIndex = currentPage * itemsPerPage;
     return items.slice(startIndex, startIndex + itemsPerPage);
   };
 
-  // Función para manejar el cambio de página
   const handlePageChange = (setPage, currentPage, totalPages, direction) => {
     if (direction === 'next' && currentPage < totalPages - 1) {
       setPage(currentPage + 1);
@@ -145,7 +126,6 @@ const LithologyFormScreen = ({ route, navigation }) => {
     }
   };
 
-  // Función para avanzar al siguiente paso
   const handleNextStep = () => {
     if (currentStep === 1 && (!type || !subtype)) {
       alert('Debes seleccionar el tipo y subtipo de roca');
@@ -163,45 +143,34 @@ const LithologyFormScreen = ({ route, navigation }) => {
       alert('Debes ingresar el espesor');
       return;
     }
-    console.log(`Avanzando al paso: ${currentStep + 1}`); // Verifica el flujo
     setCurrentStep(currentStep + 1);
   };
-  // Función para retroceder al paso anterior
+
   const handlePreviousStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   };
 
-  // Opciones para el tipo de roca
   const rockTypeOptions = [
     { label: 'Sedimentaria', value: 'sedimentary' },
     { label: 'Ígnea', value: 'igneous' },
     { label: 'Metamórfica', value: 'metamorphic' },
   ];
 
-  // Renderizar el contenido del modal según el paso actual
   const renderModalContent = () => {
     switch (currentStep) {
-      case 1: // Paso 1: Tipo y subtipo de roca
+      case 1:
         return (
           <>
             <Text category="h6" style={styles.label}>Paso 1/4: Tipo y subtipo de roca</Text>
-            <Select
-              label="Tipo de roca"
-              selectedIndex={new IndexPath(rockTypeOptions.findIndex(option => option.value === type))}
-              onSelect={(index) => {
-                if (!Array.isArray(index)) {
-                  setType(rockTypeOptions[index.row].value as 'sedimentary' | 'igneous' | 'metamorphic');
-                }
-              }}
+            <RNPickerSelect
+              onValueChange={(value) => setType(value)}
+              items={rockTypeOptions}
+              placeholder={{ label: 'Seleccione un tipo', value: null }}
               value={type}
-              style={styles.input}
-            >
-              {rockTypeOptions.map((option, i) => (
-                <SelectItem key={i} title={option.label} />
-              ))}
-            </Select>
+              style={pickerSelectStyles}
+            />
             <Input
               placeholder="Buscar subtipo"
               value={searchQuerySubtype}
@@ -209,21 +178,20 @@ const LithologyFormScreen = ({ route, navigation }) => {
               accessoryRight={SearchIcon}
               style={styles.searchInput}
             />
-            <List
+            <FlatList
               data={getPaginatedItems(filterItems(rockTypes[type], searchQuerySubtype), currentPageSubtype)}
               keyExtractor={(item) => item?.subtype || Math.random().toString()}
               renderItem={({ item: dataItem }) => (
-                <ListItem
-                  title={dataItem.subtype}
-                  accessoryLeft={() => (
-                    <Image source={dataItem.image} style={styles.listImage} />
-                  )}
+                <TouchableOpacity
                   onPress={() => setSubtype(dataItem.subtype)}
                   style={[
                     styles.listItem,
                     subtype === dataItem.subtype && styles.selectedListItem,
                   ]}
-                />
+                >
+                  <Image source={dataItem.image} style={styles.listImage} />
+                  <Text>{dataItem.subtype}</Text>
+                </TouchableOpacity>
               )}
             />
             <View style={styles.paginationContainer}>
@@ -246,7 +214,7 @@ const LithologyFormScreen = ({ route, navigation }) => {
             </View>
           </>
         );
-      case 2: // Paso 2: Estructura
+      case 2:
         return (
           <>
             <Text category="h6" style={styles.label}>Paso 2/4: Estructura</Text>
@@ -257,21 +225,20 @@ const LithologyFormScreen = ({ route, navigation }) => {
               accessoryRight={SearchIcon}
               style={styles.searchInput}
             />
-            <List
+            <FlatList
               data={getPaginatedItems(filterItems(structureTypes, searchQueryStructure), currentPageStructure)}
               keyExtractor={(item) => item?.structure || Math.random().toString()}
               renderItem={({ item: dataItem }) => (
-                <ListItem
-                  title={dataItem.structure}
-                  accessoryLeft={() => (
-                    <Image source={dataItem.image} style={styles.listImage} />
-                  )}
+                <TouchableOpacity
                   onPress={() => setStructure(dataItem.structure)}
                   style={[
                     styles.listItem,
                     structure === dataItem.structure && styles.selectedListItem,
                   ]}
-                />
+                >
+                  <Image source={dataItem.image} style={styles.listImage} />
+                  <Text>{dataItem.structure}</Text>
+                </TouchableOpacity>
               )}
             />
             <View style={styles.paginationContainer}>
@@ -297,7 +264,7 @@ const LithologyFormScreen = ({ route, navigation }) => {
             </View>
           </>
         );
-      case 3: // Paso 3: Fósiles
+      case 3:
         return (
           <>
             <Text category="h6" style={styles.label}>Paso 3/4: Fósiles</Text>
@@ -308,21 +275,20 @@ const LithologyFormScreen = ({ route, navigation }) => {
               accessoryRight={SearchIcon}
               style={styles.searchInput}
             />
-            <List
+            <FlatList
               data={getPaginatedItems(filterItems(fossilTypes, searchQueryFossil), currentPageFossil)}
               keyExtractor={(item) => item?.fossil || Math.random().toString()}
               renderItem={({ item: dataItem }) => (
-                <ListItem
-                  title={dataItem.fossil}
-                  accessoryLeft={() => (
-                    <Image source={dataItem.image} style={styles.listImage} />
-                  )}
+                <TouchableOpacity
                   onPress={() => setFossil(dataItem.fossil)}
                   style={[
                     styles.listItem,
                     fossil === dataItem.fossil && styles.selectedListItem,
                   ]}
-                />
+                >
+                  <Image source={dataItem.image} style={styles.listImage} />
+                  <Text>{dataItem.fossil}</Text>
+                </TouchableOpacity>
               )}
             />
             <View style={styles.paginationContainer}>
@@ -348,10 +314,9 @@ const LithologyFormScreen = ({ route, navigation }) => {
             </View>
           </>
         );
-        case 4: // Paso 4: Espesor
-        console.log("Renderizando Paso 4: Espesor"); // Verifica si se ejecuta
+      case 4:
         return (
-          <View style={styles.modalContent}> {/* Contenedor flexible */}
+          <ScrollView contentContainerStyle={styles.modalContent}>
             <Text category="h6" style={styles.label}>Paso 4/4: Espesor</Text>
             <Input
               label="Espesor (m)"
@@ -368,7 +333,7 @@ const LithologyFormScreen = ({ route, navigation }) => {
                 Confirmar capa
               </Button>
             </View>
-          </View>
+          </ScrollView>
         );
       default:
         return null;
@@ -388,21 +353,21 @@ const LithologyFormScreen = ({ route, navigation }) => {
         {showLegend ? 'Ocultar leyenda' : 'Mostrar leyenda'}
       </Button>
 
-      {/* Modal para la leyenda */}
-      <Modal
+      <RNModal
         visible={showLegend}
-        backdropStyle={styles.backdrop}
-        onBackdropPress={() => setShowLegend(false)}
+        transparent={true}
+        onRequestClose={() => setShowLegend(false)}
       >
-        <Card disabled={true} style={styles.legendModal}>
-          <Text category="h6" style={styles.legendTitle}>Leyenda</Text>
-          <FlatList
+        <View style={styles.modalOverlay}>
+          <Card style={styles.legendModal}>
+            <Text category="h6" style={styles.legendTitle}>Leyenda</Text>
+            <FlatList
             data={layers}
             keyExtractor={(item) => item?.id?.toString() || Math.random().toString()}
             renderItem={({ item: layer }) => (
               <View style={styles.legendItem}>
                 <Text style={styles.legendText}>
-                  {`${layer.subtype} (${layer.thickness}m)`}
+                  {`Tipo de Roca: ${layer.subtype} (${layer.thickness}m)`}
                 </Text>
                 <Image
                   source={rockTypes[layer.type].find(rock => rock.subtype === layer.subtype)?.image}
@@ -425,26 +390,28 @@ const LithologyFormScreen = ({ route, navigation }) => {
               </View>
             )}
           />
-          <Button onPress={() => setShowLegend(false)} style={styles.closeButton}>
-            Cerrar
-          </Button>
-        </Card>
-      </Modal>
+            <Button onPress={() => setShowLegend(false)} style={styles.closeButton}>
+              Cerrar
+            </Button>
+          </Card>
+        </View>
+      </RNModal>
 
       <Button onPress={() => { setShowModal(true); setCurrentStep(1); }} style={styles.toggleButton}>
         Agregar capa
       </Button>
 
-      {/* Modal para agregar una capa */}
-      <Modal
+      <RNModal
         visible={showModal}
-        backdropStyle={styles.backdrop}
-        onBackdropPress={() => setShowModal(false)}
+        transparent={true}
+        onRequestClose={() => setShowModal(false)}
       >
-        <Card disabled={true} style={styles.modal}>
-          {renderModalContent()}
-        </Card>
-      </Modal>
+        <View style={styles.modalOverlay}>
+          <Card style={styles.modal}>
+            {renderModalContent()}
+          </Card>
+        </View>
+      </RNModal>
     </Layout>
   );
 };
@@ -460,19 +427,21 @@ const styles = StyleSheet.create({
   label: {
     marginTop: 16,
     marginBottom: 8,
-    fontSize: 16, // Aumenta el tamaño del texto
-    fontWeight: 'bold', // Hace el texto más destacado
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   input: {
     marginBottom: 16,
-    width: '100%', // Asegura que el Input ocupe todo el ancho
+    width: '100%',
   },
   searchInput: {
     marginBottom: 8,
-    width: '100%', // Asegura que el Input de búsqueda ocupe todo el ancho
+    width: '100%',
   },
   listItem: {
     paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   selectedListItem: {
     backgroundColor: '#e3f2fd',
@@ -485,12 +454,13 @@ const styles = StyleSheet.create({
   legendModal: {
     width: '90%',
     maxHeight: '80%',
+    padding: 16,
   },
   legendTitle: {
     marginBottom: 16,
     textAlign: 'center',
-    fontSize: 18, // Aumenta el tamaño del título
-    fontWeight: 'bold', // Hace el título más destacado
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   legendItem: {
     marginBottom: 16,
@@ -507,8 +477,22 @@ const styles = StyleSheet.create({
   closeButton: {
     marginTop: 16,
   },
-  backdrop: {
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modal: {
+    width: '90%',
+    maxHeight: '90%',
+    padding: 16,
+  },
+  modalContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
   },
   paginationContainer: {
     flexDirection: 'row',
@@ -516,28 +500,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  modal: {
-    width: '90%', // Ocupa el 90% del ancho de la pantalla
-    maxHeight: '90%', // Ocupa el 90% del alto de la pantalla
-    padding: 16,
-    justifyContent: 'center', // Centra el contenido verticalmente
-    alignItems: 'center', // Centra el contenido horizontalmente
-  },
-  modalContent: {
-    flex: 1, // Ocupa todo el espacio disponible dentro de la Card
-    width: '100%', // Ocupa todo el ancho de la Card
-    justifyContent: 'center', // Centra el contenido verticalmente
-    alignItems: 'center', // Centra el contenido horizontalmente
-  },
   stepButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 16,
-    width: '100%', // Asegura que los botones ocupen todo el ancho
+    width: '100%',
   },
   stepButton: {
-    flex: 1, // Los botones ocupan el espacio disponible
+    flex: 1,
     marginHorizontal: 8,
+  },
+});
+
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 4,
+    color: 'black',
+    paddingRight: 30,
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 0.5,
+    borderColor: 'gray',
+    borderRadius: 8,
+    color: 'black',
+    paddingRight: 30,
   },
 });
 

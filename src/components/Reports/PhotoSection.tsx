@@ -1,11 +1,13 @@
-import React from "react";
-import { View, Image, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { View, Image, StyleSheet, Alert } from "react-native";
 import { Button, Icon, Text, Card } from "@ui-kitten/components";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 
 const PhotoSection = ({ photoUri, setPhotoUri, latitude, setLatitude, longitude, setLongitude }) => {
-  const handleTakePhoto = async () => {
+  const [showCropOption, setShowCropOption] = useState(false); // Estado para mostrar la opción de recorte
+
+  const handleTakePhoto = async (allowsEditing = false) => {
     const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
     if (cameraStatus !== "granted") {
       alert("Se necesitan permisos para acceder a la cámara.");
@@ -19,8 +21,8 @@ const PhotoSection = ({ photoUri, setPhotoUri, latitude, setLatitude, longitude,
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsEditing, // Permite o no la edición según la elección del usuario
+      aspect: [4, 3], // Relación de aspecto para el recorte (solo aplica si allowsEditing es true)
       quality: 1,
     });
 
@@ -38,9 +40,27 @@ const PhotoSection = ({ photoUri, setPhotoUri, latitude, setLatitude, longitude,
     }
   };
 
+  const handleCropOption = () => {
+    Alert.alert(
+      "Ajustar Imagen",
+      "¿Deseas recortar la imagen?",
+      [
+        {
+          text: "Sí",
+          onPress: () => handleTakePhoto(true), // Permite recortar la imagen
+        },
+        {
+          text: "No",
+          onPress: () => handleTakePhoto(false), // Toma la foto completa
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   return (
     <View>
-      <Button onPress={handleTakePhoto} style={styles.button} accessoryLeft={(props) => <Icon {...props} name="camera-outline" />}>
+      <Button onPress={handleCropOption} style={styles.button} accessoryLeft={(props) => <Icon {...props} name="camera-outline" />}>
         Tomar Foto
       </Button>
       {photoUri ? (
@@ -67,7 +87,7 @@ const styles = StyleSheet.create({
   photo: {
     width: "100%",
     height: 200,
-    resizeMode: "contain",
+    resizeMode: "cover", // Ajusta la imagen al contenedor sin distorsionarla
     marginBottom: 16,
   },
   coordinatesText: {

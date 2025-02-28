@@ -24,12 +24,12 @@ const CreateColumnScreen = ({ navigation }: { navigation: any }) => {
   return (
     <Layout style={styles.container}>
       <Input
-        label="Column Name"
+        label="Nombre de Columna"
         value={name}
         onChangeText={setName}
         style={styles.input}
       />
-      <Button onPress={handleCreate}>Create</Button>
+      <Button onPress={handleCreate}>Crear</Button>
     </Layout>
   );
 };

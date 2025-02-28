@@ -48,11 +48,11 @@ const dynamicTexts = {
 
 const predefinedTemplates = {
   sedimentary: [
-    ["Tipo", "Porcentaje"],
-    ["Minerales", ""],
-    ["Fósiles", ""],
-    ["Cemento", ""],
-    ["Matriz", ""],
+    ["","Tipo", "Porcentaje"],
+    ["Minerales", "", ""],
+    ["Fósiles", "", ""],
+    ["Cemento", "", ""],
+    ["Matriz", "", ""],
   ],
   igneous: [
     ["Minerales", "Forma", "Tamaño", "Hábito", "Color", "Porcentaje"],
@@ -192,7 +192,7 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme["background-basic-color-1"] }]}>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         <Layout style={styles.container} level="1">
-          <Input
+          {/*<Input
             label="Título"
             placeholder="Ingrese el título del reporte"
             value={title}
@@ -211,7 +211,7 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
             <SelectItem title="Roca Metamórfica" />
             <SelectItem title="Libre" />
           </Select>
-
+           /*/}   
           <ReportForm
             title={title}
             setTitle={setTitle}
