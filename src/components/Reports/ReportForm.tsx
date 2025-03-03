@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { Input, Select, SelectItem, IndexPath, useTheme } from "@ui-kitten/components";
+import React, { useState, useEffect } from "react";
+import { Input, useTheme } from "@ui-kitten/components";
 import { View, StyleSheet } from "react-native";
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 import RNPickerSelect from "react-native-picker-select";
+
 const ReportForm = ({
   title,
   setTitle,
@@ -14,15 +15,25 @@ const ReportForm = ({
   text2,
   setText2,
 }) => {
-  const [selectedTypeIndex, setSelectedTypeIndex] = React.useState(new IndexPath(0));
   const theme = useTheme();
-  const [selectedValue, setSelectedValue] = useState(null);
+  const [selectedValue, setSelectedValue] = useState(type);
+
+  useEffect(() => {
+    setSelectedValue(type);
+  }, [type]);
+
   const items = [
     { label: "Roca Sedimentaria", value: "sedimentary" },
     { label: "Roca Ígnea", value: "igneous" },
     { label: "Roca Metamórfica", value: "metamorphic" },
     { label: "Libre", value: "free" },
   ];
+
+  const handleTypeChange = (value) => {
+    setSelectedValue(value);
+    setType(value);
+  };
+
   return (
     <View>
       <Input
@@ -33,11 +44,11 @@ const ReportForm = ({
         style={styles.input}
       />
       <RNPickerSelect
-      onValueChange={(value) => setSelectedValue(value)}
-      items={items}
-      placeholder={{ label: "Seleccione un tipo", value: null }}
-      value={selectedValue}
-    />
+        onValueChange={handleTypeChange}
+        items={items}
+        placeholder={{ label: "Seleccione un tipo", value: null }}
+        value={selectedValue}
+      />
       {dynamicTexts.map((label, index) => (
         <Animated.View key={index} entering={FadeInDown.delay(index * 100)} exiting={FadeOutUp}>
           <Input
