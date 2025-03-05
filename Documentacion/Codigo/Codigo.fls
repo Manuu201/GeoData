@@ -1,6 +1,6 @@
-PWD c:\Users\manue\Desktop\Practica - GeoData\Sprint 1\GeoData\Documentacion\Codigo
+PWD c:\Users\manue\Desktop\Proyecto\GeoData-1\Documentacion\Codigo
 INPUT C:\Users\manue\AppData\Local\MiKTeX\miktex\data\le\pdftex\pdflatex.fmt
-INPUT c:\Users\manue\Desktop\Practica - GeoData\Sprint 1\GeoData\Documentacion\Codigo\Codigo.tex
+INPUT c:\Users\manue\Desktop\Proyecto\GeoData-1\Documentacion\Codigo\Codigo.tex
 OUTPUT Codigo.log
 INPUT C:\Users\manue\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls
 INPUT C:\Users\manue\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls

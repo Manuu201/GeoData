@@ -3,11 +3,25 @@ import { View, StyleSheet } from "react-native";
 import { Button, Card, Icon, Text } from "@ui-kitten/components";
 import { TableEntity } from "../database/database";
 
+
+/**
+ * Props para el componente TableComponent.
+ * 
+ * @property {TableEntity | undefined} table - Los datos de la tabla que se mostrarán. Si es `undefined`, se mostrará un mensaje indicando que no se ha cargado la tabla.
+ * @property {() => void} onDelete - Función que se ejecuta cuando se presiona el botón de eliminar.
+ */
+
 interface TableComponentProps {
   table: TableEntity | undefined;
   onDelete: () => void;
 }
 
+/**
+ * Componente que muestra una tabla de datos con opción para eliminarla.
+ * 
+ * @param {TableComponentProps} props - Las propiedades del componente.
+ * @returns {JSX.Element} - El componente renderizado.
+ */
 export default function TableComponent({ table, onDelete }: TableComponentProps) {
   console.log("Table data:", table);
 

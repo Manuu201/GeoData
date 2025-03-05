@@ -15,7 +15,7 @@ import ViewShot from "react-native-view-shot";
 
 type ReportsEditorScreenProps = NativeStackScreenProps<RootStackParamList, "ReportsEditorScreen">;
 
-// Definir dynamicTexts aquí
+// Definir textos dinámicos para cada tipo de reporte
 const dynamicTexts = {
   sedimentary: [
     "Granulometría",
@@ -46,9 +46,10 @@ const dynamicTexts = {
   free: [],
 };
 
+// Plantillas predefinidas para las tablas de cada tipo de reporte
 const predefinedTemplates = {
   sedimentary: [
-    ["","Tipo", "Porcentaje"],
+    ["", "Tipo", "Porcentaje"],
     ["Minerales", "", ""],
     ["Fósiles", "", ""],
     ["Cemento", "", ""],
@@ -69,6 +70,13 @@ const predefinedTemplates = {
   free: Array.from({ length: 5 }, () => Array(5).fill("")), // Inicialización corregida
 };
 
+/**
+ * Pantalla de edición de reportes que permite al usuario crear o editar un reporte,
+ * agregar datos dinámicos, tablas, fotos y generar un PDF.
+ * 
+ * @param {ReportsEditorScreenProps} props - Propiedades de la pantalla.
+ * @returns {JSX.Element} - El componente de la pantalla de edición de reportes.
+ */
 const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, route }) => {
   const { report } = route.params || {};
   const [title, setTitle] = useState(report?.title || "");
@@ -86,11 +94,13 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
   const db = useSQLiteContext();
   const theme = useTheme();
 
+  // Efecto para cargar los valores dinámicos y la tabla según el tipo de reporte
   useEffect(() => {
     setDynamicTextsValues(dynamicTexts[type].map((_, i) => (report?.text1 ? JSON.parse(report.text1)[i] || "" : "")));
     setTableData(predefinedTemplates[type]);
   }, [type, report?.text1]);
 
+  // Efecto para calcular los datos minerales si el tipo es "igneous"
   useEffect(() => {
     if (type === "igneous") {
       const { Q, A, P } = extractMineralData(tableData);
@@ -101,6 +111,7 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
     }
   }, [tableData, type]);
 
+  // Efecto para cargar los datos del reporte si existe
   useEffect(() => {
     const loadReportData = async () => {
       if (report) {
@@ -127,6 +138,12 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
     loadReportData();
   }, [report]);
 
+  /**
+   * Extrae los datos minerales de la tabla.
+   * 
+   * @param {string[][]} tableData - Datos de la tabla.
+   * @returns {Object} - Datos minerales { Q, A, P }.
+   */
   const extractMineralData = (tableData: string[][]): { Q: number; A: number; P: number } => {
     let Q = 0,
       A = 0,
@@ -141,6 +158,14 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
     return { Q, A, P };
   };
 
+  /**
+   * Normaliza los datos minerales para que sumen 100.
+   * 
+   * @param {number} Q - Porcentaje de Cuarzo.
+   * @param {number} A - Porcentaje de Feldespato.
+   * @param {number} P - Porcentaje de Plagioclasa.
+   * @returns {Object} - Datos normalizados { Q, A, P }.
+   */
   const normalizeData = (Q: number, A: number, P: number): { Q: number; A: number; P: number } => {
     const total = Q + A + P;
     const factor = 100 / total;
@@ -152,6 +177,11 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
     };
   };
 
+  /**
+   * Maneja el cambio de tipo de reporte.
+   * 
+   * @param {IndexPath | IndexPath[]} index - Índice del tipo seleccionado.
+   */
   const handleTypeChange = (index: IndexPath | IndexPath[]) => {
     const selectedIndex = Array.isArray(index) ? index[0] : index;
     setSelectedTypeIndex(selectedIndex);
@@ -163,6 +193,9 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
     setType(newType);
   };
 
+  /**
+   * Guarda el reporte en la base de datos.
+   */
   const handleSaveReport = async () => {
     const now = new Date().toISOString();
     const newReport: Omit<ReportEntity, "id" | "createdAt" | "updatedAt"> = {
@@ -192,26 +225,6 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme["background-basic-color-1"] }]}>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         <Layout style={styles.container} level="1">
-          {/*<Input
-            label="Título"
-            placeholder="Ingrese el título del reporte"
-            value={title}
-            onChangeText={setTitle}
-            style={styles.input}
-          />
-
-          <Select
-            label="Tipo de Reporte"
-            selectedIndex={selectedTypeIndex}
-            onSelect={handleTypeChange} // Usar la función handleTypeChange
-            style={styles.input}
-          >
-            <SelectItem title="Roca Sedimentaria" />
-            <SelectItem title="Roca Ígnea" />
-            <SelectItem title="Roca Metamórfica" />
-            <SelectItem title="Libre" />
-          </Select>
-           /*/}   
           <ReportForm
             title={title}
             setTitle={setTitle}

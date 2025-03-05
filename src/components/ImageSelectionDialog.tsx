@@ -1,35 +1,46 @@
-import { useState } from "react"
-import { IndexPath, Select, SelectItem } from "@ui-kitten/components"
-import { Modal, Button, Card, Input, Text } from "@ui-kitten/components"
-import { FlatList, Image, StyleSheet } from "react-native"
-import type { PhotoEntity } from "../database/database"
-import React from "react"
+import { useState } from "react";
+import { IndexPath, Select, SelectItem } from "@ui-kitten/components";
+import { Modal, Button, Card, Input, Text } from "@ui-kitten/components";
+import { FlatList, Image, StyleSheet } from "react-native";
+import type { PhotoEntity } from "../database/database";
+import React from "react";
 
 interface ImageSelectionDialogProps {
-  visible: boolean
-  onDismiss: () => void
-  photos: PhotoEntity[]
-  onSelectImage: (photo: PhotoEntity) => void
+  visible: boolean;
+  onDismiss: () => void;
+  photos: PhotoEntity[];
+  onSelectImage: (photo: PhotoEntity) => void;
 }
 
+/**
+ * Componente de diálogo para seleccionar una imagen de una lista de fotos.
+ * Permite buscar, ordenar y seleccionar una foto.
+ * 
+ * @param {ImageSelectionDialogProps} props - Propiedades del componente.
+ * @returns {JSX.Element} - El componente de diálogo de selección de imágenes.
+ */
 export default function ImageSelectionDialog({ visible, onDismiss, photos, onSelectImage }: ImageSelectionDialogProps) {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedIndex, setSelectedIndex] = useState(new IndexPath(0))
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(new IndexPath(0));
 
-  // Mapear opciones de ordenamiento
-  const sortOptions = ["ID", "Fecha"]
-  const sortBy = sortOptions[selectedIndex.row]
+  // Opciones de ordenamiento
+  const sortOptions = ["ID", "Fecha"];
+  const sortBy = sortOptions[selectedIndex.row];
 
-  // Filtrar y ordenar fotos
+  /**
+   * Filtra y ordena las fotos según la búsqueda y el criterio de ordenamiento.
+   * 
+   * @returns {PhotoEntity[]} - Lista de fotos filtradas y ordenadas.
+   */
   const filteredPhotos = photos
     .filter(
       (photo) => photo.id.toString().includes(searchQuery.toLowerCase()), // Buscar por ID
     )
     .sort((a, b) => {
-      if (sortBy === "ID") return a.id - b.id
-      if (sortBy === "Fecha") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      return 0
-    })
+      if (sortBy === "ID") return a.id - b.id;
+      if (sortBy === "Fecha") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return 0;
+    });
 
   return (
     <Modal visible={visible} backdropStyle={styles.backdrop} onBackdropPress={onDismiss}>
@@ -38,6 +49,7 @@ export default function ImageSelectionDialog({ visible, onDismiss, photos, onSel
           Seleccionar Imagen
         </Text>
 
+        {/* Campo de búsqueda por ID */}
         <Input
           placeholder="Buscar por ID"
           value={searchQuery}
@@ -45,6 +57,7 @@ export default function ImageSelectionDialog({ visible, onDismiss, photos, onSel
           style={styles.searchInput}
         />
 
+        {/* Selector de ordenamiento */}
         <Select
           selectedIndex={selectedIndex}
           onSelect={(index) => setSelectedIndex(index as IndexPath)}
@@ -56,6 +69,7 @@ export default function ImageSelectionDialog({ visible, onDismiss, photos, onSel
           ))}
         </Select>
 
+        {/* Lista de fotos */}
         <FlatList
           data={filteredPhotos}
           renderItem={({ item }) => (
@@ -69,12 +83,13 @@ export default function ImageSelectionDialog({ visible, onDismiss, photos, onSel
           numColumns={2}
         />
 
+        {/* Botón para cerrar el diálogo */}
         <Button style={styles.closeButton} onPress={onDismiss}>
           Cerrar
         </Button>
       </Card>
     </Modal>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -87,5 +102,4 @@ const styles = StyleSheet.create({
   label: { marginTop: 8, fontWeight: "bold" },
   date: { marginTop: 4, fontSize: 12 },
   closeButton: { marginTop: 16 },
-})
-
+});

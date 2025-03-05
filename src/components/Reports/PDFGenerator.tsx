@@ -5,6 +5,28 @@ import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as ImageManipulator from "expo-image-manipulator";
 
+/**
+ * Props para el componente PDFGenerator.
+ * 
+ * @property {string} type - Tipo de reporte (por ejemplo, "igneous" o "free").
+ * @property {string} title - Título del reporte.
+ * @property {string[]} dynamicTexts - Etiquetas para los textos dinámicos.
+ * @property {string[]} dynamicTextsValues - Valores correspondientes a los textos dinámicos.
+ * @property {string[][]} tableData - Datos de la tabla que se incluirán en el PDF.
+ * @property {string} photoUri - URI de la foto que se incluirá en el PDF.
+ * @property {number} latitude - Latitud de la ubicación donde se tomó la foto.
+ * @property {number} longitude - Longitud de la ubicación donde se tomó la foto.
+ * @property {{ Q: number, A: number, P: number }} mineralData - Datos minerales para el diagrama de Streckeisen (solo para tipo "igneous").
+ * @property {string} text2 - Texto libre que se incluirá en el PDF.
+ * @property {React.RefObject} viewShotRef - Referencia para capturar un diagrama (solo para tipo "igneous").
+ */
+
+/**
+ * Componente que genera un PDF con datos dinámicos, una tabla, una foto, coordenadas y texto libre.
+ * 
+ * @param {PDFGenerator} props - Las propiedades del componente.
+ * @returns {JSX.Element} - El componente renderizado.
+ */
 const PDFGenerator = ({
   type,
   title,

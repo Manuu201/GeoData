@@ -12,6 +12,12 @@ import * as Animatable from "react-native-animatable";
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "NotesScreen">;
 
+/**
+ * Pantalla que muestra una lista de notas geológicas con funcionalidades de filtrado, ordenación y búsqueda.
+ * Permite al usuario crear, editar y eliminar notas.
+ * 
+ * @returns {JSX.Element} - El componente de la pantalla de notas.
+ */
 export default function NotesScreen() {
   const db = useSQLiteContext();
   const navigation = useNavigation<NavigationProp>();
@@ -26,6 +32,7 @@ export default function NotesScreen() {
   const [noteToDelete, setNoteToDelete] = useState<NoteEntity | null>(null);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
+  // Efecto que se ejecuta cada vez que la pantalla obtiene el foco
   useFocusEffect(
     useCallback(() => {
       fetchNotes();
@@ -37,6 +44,9 @@ export default function NotesScreen() {
     }, [])
   );
 
+  /**
+   * Obtiene las notas desde la base de datos y las almacena en el estado.
+   */
   async function fetchNotes() {
     const fetchedNotes = await fetchNotesAsync(db);
     if (sortByDate) {
@@ -45,12 +55,22 @@ export default function NotesScreen() {
     setNotes(fetchedNotes);
   }
 
+  /**
+   * Elimina una nota de la base de datos.
+   * 
+   * @param {number} id - ID de la nota a eliminar.
+   */
   async function deleteNote(id: number) {
     await deleteNoteAsync(db, id);
     fetchNotes();
     showSnackbar("Nota eliminada");
   }
 
+  /**
+   * Abre la pantalla de edición de notas.
+   * 
+   * @param {NoteEntity} [note] - La nota a editar (opcional).
+   */
   function openNoteEditor(note?: NoteEntity) {
     if (!note) {
       showSnackbar("Nueva nota creada");
@@ -62,11 +82,21 @@ export default function NotesScreen() {
     });
   }
 
+  /**
+   * Muestra un mensaje en la Snackbar.
+   * 
+   * @param {string} message - El mensaje a mostrar.
+   */
   function showSnackbar(message: string) {
     setSnackbarMessage(message);
     setSnackbarVisible(true);
   }
 
+  /**
+   * Filtra y ordena las notas según los criterios seleccionados.
+   * 
+   * @returns {NoteEntity[]} - Lista de notas filtradas y ordenadas.
+   */
   const getFilteredNotes = () => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -93,6 +123,12 @@ export default function NotesScreen() {
 
   const filteredNotes = getFilteredNotes();
 
+  /**
+   * Renderiza una tarjeta de nota.
+   * 
+   * @param {Object} item - El objeto de la nota a renderizar.
+   * @returns {JSX.Element} - El componente de la tarjeta de nota.
+   */
   const renderNoteCard = ({ item }: { item: NoteEntity }) => (
     <Animatable.View animation="fadeIn" duration={500}>
       <Card style={styles(theme).card} onPress={() => openNoteEditor(item)}>
@@ -113,6 +149,15 @@ export default function NotesScreen() {
     </Animatable.View>
   );
 
+  /**
+   * Componente de botón de filtro.
+   * 
+   * @param {Object} props - Propiedades del botón de filtro.
+   * @param {string} props.label - Etiqueta del botón.
+   * @param {boolean} props.active - Indica si el filtro está activo.
+   * @param {Function} props.onPress - Función que se ejecuta al presionar el botón.
+   * @returns {JSX.Element} - El componente del botón de filtro.
+   */
   const FilterButton = ({ label, active, onPress }) => (
     <Button
       appearance={active ? "filled" : "outline"}
@@ -125,6 +170,11 @@ export default function NotesScreen() {
     </Button>
   );
 
+  /**
+   * Componente que contiene los botones de filtro.
+   * 
+   * @returns {JSX.Element} - El componente de los filtros.
+   */
   const Filters = () => (
     <Layout style={{ flexDirection: "row", marginBottom: 16 }}>
       <FilterButton label="Hoy" active={filter === "today"} onPress={() => setFilter("today")} />

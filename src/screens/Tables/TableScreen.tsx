@@ -11,6 +11,9 @@ import { Snackbar } from "react-native-paper";
 
 const ITEMS_PER_PAGE = 5;
 
+/**
+ * Propiedades del componente `MemoizedTextInput`.
+ */
 interface MemoizedTextInputProps {
   label: string;
   value: string;
@@ -19,6 +22,9 @@ interface MemoizedTextInputProps {
   error?: boolean;
 }
 
+/**
+ * Componente de entrada de texto memoizado para mejorar el rendimiento.
+ */
 const MemoizedTextInput = memo<MemoizedTextInputProps>(({ label, value, onChangeText, keyboardType = "default", error = false }) => (
   <Input
     label={label}
@@ -30,6 +36,12 @@ const MemoizedTextInput = memo<MemoizedTextInputProps>(({ label, value, onChange
   />
 ));
 
+/**
+ * Pantalla que muestra una lista de tablas geológicas con funcionalidades de filtrado, ordenación y paginación.
+ * Permite al usuario agregar nuevas tablas, editar tablas existentes y eliminarlas.
+ * 
+ * @returns {JSX.Element} - El componente de la pantalla de tablas.
+ */
 export default function TableScreen() {
   const db = useSQLiteContext();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "TableEditorScreen">>();
@@ -49,18 +61,27 @@ export default function TableScreen() {
   const [page, setPage] = useState(0);
   const theme = useTheme();
 
+  // Efecto que se ejecuta cada vez que la pantalla obtiene el foco
   useFocusEffect(
     useCallback(() => {
       fetchTables();
     }, [])
   );
 
+  /**
+   * Obtiene las tablas desde la base de datos y las almacena en el estado.
+   */
   async function fetchTables() {
     const allTables = await fetchTablesAsync(db);
     setTables(allTables);
     setPage(0);
   }
 
+  /**
+   * Filtra y ordena las tablas según los criterios seleccionados.
+   * 
+   * @returns {TableEntity[]} - Lista de tablas filtradas y ordenadas.
+   */
   const getFilteredTables = () => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -95,6 +116,9 @@ export default function TableScreen() {
   const totalPages = Math.ceil(filteredTables.length / ITEMS_PER_PAGE);
   const currentTables = filteredTables.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE);
 
+  /**
+   * Agrega una nueva tabla a la base de datos.
+   */
   const handleAddTable = async () => {
     const rows = Number.parseInt(newTableRows, 10);
     const columns = Number.parseInt(newTableColumns, 10);
@@ -131,6 +155,11 @@ export default function TableScreen() {
     setErrorMessage(null);
   };
 
+  /**
+   * Elimina una tabla de la base de datos.
+   * 
+   * @param {number} id - ID de la tabla a eliminar.
+   */
   const handleDeleteTable = async (id: number) => {
     await deleteTableAsync(db, id);
     fetchTables();
@@ -138,6 +167,9 @@ export default function TableScreen() {
     setSnackbarVisible(true);
   };
 
+  /**
+   * Plantillas predefinidas para la creación de tablas.
+   */
   const predefinedTemplates = {
     "Roca Sedimentaria": {
       rows: 5,
@@ -161,6 +193,11 @@ export default function TableScreen() {
     }
   };
 
+  /**
+   * Selecciona una plantilla predefinida y llena los campos correspondientes.
+   * 
+   * @param {keyof typeof predefinedTemplates} templateName - Nombre de la plantilla seleccionada.
+   */
   const handleTemplateSelection = (templateName: keyof typeof predefinedTemplates) => {
     const template = predefinedTemplates[templateName];
     setNewTableName(templateName);
@@ -170,6 +207,15 @@ export default function TableScreen() {
     setErrorMessage(null);
   };
 
+  /**
+   * Componente de botón de filtro.
+   * 
+   * @param {Object} props - Propiedades del botón de filtro.
+   * @param {string} props.label - Etiqueta del botón.
+   * @param {boolean} props.active - Indica si el filtro está activo.
+   * @param {Function} props.onPress - Función que se ejecuta al presionar el botón.
+   * @returns {JSX.Element} - El componente del botón de filtro.
+   */
   const FilterButton = ({ label, active, onPress }) => (
     <Button
       appearance={active ? "filled" : "outline"}
@@ -182,6 +228,11 @@ export default function TableScreen() {
     </Button>
   );
 
+  /**
+   * Componente que contiene los botones de filtro.
+   * 
+   * @returns {JSX.Element} - El componente de los filtros.
+   */
   const Filters = () => (
     <Layout style={{ flexDirection: "row", marginBottom: 16 }}>
       <FilterButton label="Hoy" active={filter === "today"} onPress={() => setFilter("today")} />
@@ -312,6 +363,12 @@ export default function TableScreen() {
   );
 }
 
+/**
+ * Estilos del componente.
+ * 
+ * @param {Object} theme - Tema de la aplicación.
+ * @returns {Object} - Objeto de estilos.
+ */
 const styles = (theme) =>
   StyleSheet.create({
     safeArea: {

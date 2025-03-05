@@ -12,6 +12,13 @@ import type { PhotoEntity } from "../../database/database";
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "StructuralDataScreen">;
 
+/**
+ * Pantalla que permite al usuario visualizar y editar datos estructurales (dip y dipDir) sobre una foto.
+ * También permite mover, hacer zoom, rotar la imagen y guardar la imagen con los datos superpuestos.
+ * 
+ * @param {Object} route - Parámetros de la ruta, incluyendo el ID de la foto.
+ * @returns {JSX.Element} - El componente de la pantalla de datos estructurales.
+ */
 export default function StructuralDataScreen({ route }) {
   const { photoId } = route.params;
   const db = useSQLiteContext();
@@ -48,7 +55,11 @@ export default function StructuralDataScreen({ route }) {
     }, [photoId])
   );
 
-  // Función para calcular las coordenadas del punto de dip/dipDir
+  /**
+   * Calcula las coordenadas del punto de dip/dipDir en la red estereográfica.
+   * 
+   * @returns {Object} - Coordenadas { x, y } del punto.
+   */
   const calculateDipPoint = () => {
     const angle = (dipDir - 90) * (Math.PI / 180);
     const dipRadius = radius * (dip / 90);
@@ -58,7 +69,11 @@ export default function StructuralDataScreen({ route }) {
     };
   };
 
-  // Función para dibujar la curva de dip
+  /**
+   * Dibuja la curva de dip en la red estereográfica.
+   * 
+   * @returns {JSX.Element} - Componente SVG de la curva de dip.
+   */
   const drawDipCurve = () => {
     const startAngle = (dipDir - 90) * (Math.PI / 180);
     const endAngle = (dipDir + 90) * (Math.PI / 180);
@@ -79,7 +94,11 @@ export default function StructuralDataScreen({ route }) {
     );
   };
 
-  // Función para dibujar el plano imaginario
+  /**
+   * Dibuja el plano imaginario en la red estereográfica.
+   * 
+   * @returns {JSX.Element} - Componente SVG del plano imaginario.
+   */
   const drawImaginaryPlane = () => {
     const angle = (dipDir - 90) * (Math.PI / 180);
     const dipRadius = radius * (dip / 90);
@@ -100,7 +119,9 @@ export default function StructuralDataScreen({ route }) {
     );
   };
 
-  // Guardar la imagen con el plano geológico superpuesto y el texto
+  /**
+   * Guarda la imagen con los datos estructurales superpuestos en la galería del dispositivo.
+   */
   const saveImage = async () => {
     try {
       const { status } = await MediaLibrary.requestPermissionsAsync();
@@ -158,7 +179,11 @@ export default function StructuralDataScreen({ route }) {
     })
   ).current;
 
-  // Botones para mover la imagen
+  /**
+   * Mueve la imagen en la dirección especificada.
+   * 
+   * @param {string} direction - Dirección del movimiento ('up', 'down', 'left', 'right').
+   */
   const moveImage = (direction) => {
     const moveAmount = 20; // Cantidad de píxeles para mover la imagen
     switch (direction) {
@@ -179,7 +204,11 @@ export default function StructuralDataScreen({ route }) {
     }
   };
 
-  // Botones para rotar la imagen
+  /**
+   * Rota la imagen en la dirección especificada.
+   * 
+   * @param {string} direction - Dirección de la rotación ('left', 'right').
+   */
   const rotateImage = (direction) => {
     const rotateAmount = 10; // Cantidad de grados para rotar la imagen
     switch (direction) {
@@ -194,7 +223,9 @@ export default function StructuralDataScreen({ route }) {
     }
   };
 
-  // Botón para restaurar la imagen a su estado original
+  /**
+   * Restaura la imagen a su estado original (escala 1, sin desplazamiento ni rotación).
+   */
   const resetImage = () => {
     setImageScale(1);
     setImageOffset({ x: 0, y: 0 });

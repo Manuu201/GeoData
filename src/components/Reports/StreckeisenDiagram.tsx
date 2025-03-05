@@ -1,105 +1,122 @@
-import React from "react"
-import { StyleSheet } from "react-native"
-import { Card, Text } from "@ui-kitten/components"
-import Svg, { Circle, Polygon, Text as SvgText, Line } from "react-native-svg"
+import React from "react";
+import { StyleSheet } from "react-native";
+import { Card, Text } from "@ui-kitten/components";
+import Svg, { Circle, Polygon, Text as SvgText, Line } from "react-native-svg";
 
-// Función para calcular la intersección de dos líneas
+/**
+ * Calcula la intersección de dos líneas.
+ * 
+ * @param {Object} line1Start - Punto de inicio de la primera línea (x, y).
+ * @param {Object} line1End - Punto de fin de la primera línea (x, y).
+ * @param {Object} line2Start - Punto de inicio de la segunda línea (x, y).
+ * @param {Object} line2End - Punto de fin de la segunda línea (x, y).
+ * @returns {Object | null} - Punto de intersección (x, y) o `null` si las líneas son paralelas.
+ */
 const calculateIntersection = (line1Start, line1End, line2Start, line2End) => {
-  const x1 = line1Start.x
-  const y1 = line1Start.y
-  const x2 = line1End.x
-  const y2 = line1End.y
-  const x3 = line2Start.x
-  const y3 = line2Start.y
-  const x4 = line2End.x
-  const y4 = line2End.y
+  const x1 = line1Start.x;
+  const y1 = line1Start.y;
+  const x2 = line1End.x;
+  const y2 = line1End.y;
+  const x3 = line2Start.x;
+  const y3 = line2Start.y;
+  const x4 = line2End.x;
+  const y4 = line2End.y;
 
-  const denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+  const denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
   if (denominator === 0) {
-    return null // Las líneas son paralelas
+    return null; // Las líneas son paralelas
   }
 
-  const x = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / denominator
-  const y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / denominator
+  const x = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)) / denominator;
+  const y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / denominator;
 
-  return { x, y }
-}
+  return { x, y };
+};
 
+/**
+ * Componente que representa el diagrama de Streckeisen para clasificar rocas ígneas.
+ * 
+ * @param {Object} props - Propiedades del componente.
+ * @param {number} props.Q - Porcentaje de cuarzo.
+ * @param {number} props.A - Porcentaje de feldespato alcalino.
+ * @param {number} props.P - Porcentaje de plagioclasa.
+ * @returns {JSX.Element} - El componente renderizado.
+ */
 const StreckeisenDiagram = ({ Q, A, P }) => {
-  const width = 300
-  const height = 260
-  const padding = 20
+  const width = 300;
+  const height = 260;
+  const padding = 20;
 
   // Puntos del triángulo principal
   const trianglePoints = [
     { x: width / 2, y: padding }, // Q (top)
     { x: padding, y: height - padding }, // A (bottom left)
     { x: width - padding, y: height - padding }, // P (bottom right)
-  ]
+  ];
 
-  // Cálculo del punto de intersección basado en los porcentajes
-  const total = Q + A + P
-  const normalizedQ = (Q / total) * 100
-  const normalizedA = (A / total) * 100
-  const normalizedP = (P / total) * 100
+  // Normalizar los valores de Q, A y P para que sumen 100%
+  const total = Q + A + P;
+  const normalizedQ = (Q / total) * 100;
+  const normalizedA = (A / total) * 100;
+  const normalizedP = (P / total) * 100;
 
   // Coordenadas para las líneas siguiendo las reglas específicas:
   // Línea Azul (Cuarzo): PQ -> QA
   const QLineStart = {
     x: trianglePoints[2].x - (trianglePoints[2].x - trianglePoints[0].x) * (normalizedQ / 100), // Punto en plano AP
     y: trianglePoints[2].y - (trianglePoints[2].y - trianglePoints[0].y) * (normalizedQ / 100),
-  }
+  };
   const QLineEnd = {
     x: trianglePoints[0].x - (trianglePoints[0].x - trianglePoints[1].x) * ((100 - normalizedQ) / 100), // Punto en plano QA
     y: trianglePoints[0].y + (trianglePoints[1].y - trianglePoints[0].y) * ((100 - normalizedQ) / 100),
-  }
-  
+  };
+
   // Línea Verde (Feldespato): QA -> AP
   const ALineStart = {
     x: trianglePoints[0].x - (trianglePoints[0].x - trianglePoints[1].x) * (normalizedA / 100), // Punto en QA
     y: trianglePoints[0].y + (trianglePoints[1].y - trianglePoints[0].y) * (normalizedA / 100),
-  }
+  };
   const ALineEnd = {
     x: trianglePoints[1].x + (trianglePoints[2].x - trianglePoints[1].x) * ((100 - normalizedA) / 100), // Punto en PQ
     y: trianglePoints[1].y,
-  }
-  
+  };
+
   // Línea Roja (Plagioclasa): AP -> PQ
   const PLineStart = {
     x: trianglePoints[1].x + (trianglePoints[2].x - trianglePoints[1].x) * (normalizedP / 100), // Punto en plano PQ
     y: trianglePoints[1].y,
-  }
+  };
   const PLineEnd = {
     x: trianglePoints[2].x - (trianglePoints[2].x - trianglePoints[0].x) * ((100 - normalizedP) / 100), // Punto en plano AP
     y: trianglePoints[2].y - (trianglePoints[2].y - trianglePoints[0].y) * ((100 - normalizedP) / 100),
-  }
+  };
 
   // Calcular la intersección de las líneas azul y verde
-  const intersection = calculateIntersection(QLineStart, QLineEnd, ALineStart, ALineEnd)
+  const intersection = calculateIntersection(QLineStart, QLineEnd, ALineStart, ALineEnd);
 
   // Verificar si el punto de intersección está en la línea roja
   const isOnRedLine = (point) => {
-    const slopeRed = (PLineEnd.y - PLineStart.y) / (PLineEnd.x - PLineStart.x)
-    const yOnRedLine = PLineStart.y + slopeRed * (point.x - PLineStart.x)
-    return Math.abs(yOnRedLine - point.y) < 1 // Tolerancia de 1 píxel
-  }
+    const slopeRed = (PLineEnd.y - PLineStart.y) / (PLineEnd.x - PLineStart.x);
+    const yOnRedLine = PLineStart.y + slopeRed * (point.x - PLineStart.x);
+    return Math.abs(yOnRedLine - point.y) < 1; // Tolerancia de 1 píxel
+  };
 
-  const x = intersection ? intersection.x : ((normalizedA + 0.5 * normalizedP) / 100) * (width - 2 * padding) + padding
-  const y = intersection ? intersection.y : height - padding - (normalizedQ / 100) * (height - 2 * padding)
+  const x = intersection ? intersection.x : ((normalizedA + 0.5 * normalizedP) / 100) * (width - 2 * padding) + padding;
+  const y = intersection ? intersection.y : height - padding - (normalizedQ / 100) * (height - 2 * padding);
 
   // Determinación del tipo de roca
-  let rockType = ""
-  if (normalizedQ > 90) rockType = "Granitoides ricos en cuarzo"
-  else if (normalizedQ > 60 && normalizedA > 20) rockType = "Granito Feld. Alcalinico (0-20)"
-  else if (normalizedQ > 40 && normalizedA > 20) rockType = "Sienogranito (5-20) Monzogranito (5-20)"
-  else if (normalizedQ > 20 && normalizedA > 20) rockType = "Granodiorita (5-25)"
-  else if (normalizedQ > 10 && normalizedA > 10) rockType = "Tonalita (10-40) Trondhjemia (0-10)"
-  else if (normalizedQ > 5 && normalizedA > 5) rockType = "Czo-Sienita Feld. Alcal. (0-25)"
-  else if (normalizedQ > 5 && normalizedA > 5) rockType = "Czo-Sienita(5-30)"
-  else if (normalizedQ > 10 && normalizedA > 10) rockType = "Czo-Monzonita (10-35)"
-  else if (normalizedQ > 10 && normalizedA > 10) rockType = "Czo-Monzodiorita (10-35) Czo-Monzogabro (20-50)"
-  else if (normalizedQ > 20 && normalizedA > 20) rockType = "Czo-Diorita (20-45) Czo-Gabro(25-65)"
-  else rockType = "Roca no clasificada"
+  let rockType = "";
+  if (normalizedQ > 90) rockType = "Granitoides ricos en cuarzo";
+  else if (normalizedQ > 60 && normalizedA > 20) rockType = "Granito Feld. Alcalinico (0-20)";
+  else if (normalizedQ > 40 && normalizedA > 20) rockType = "Sienogranito (5-20) Monzogranito (5-20)";
+  else if (normalizedQ > 20 && normalizedA > 20) rockType = "Granodiorita (5-25)";
+  else if (normalizedQ > 10 && normalizedA > 10) rockType = "Tonalita (10-40) Trondhjemia (0-10)";
+  else if (normalizedQ > 5 && normalizedA > 5) rockType = "Czo-Sienita Feld. Alcal. (0-25)";
+  else if (normalizedQ > 5 && normalizedA > 5) rockType = "Czo-Sienita (5-30)";
+  else if (normalizedQ > 10 && normalizedA > 10) rockType = "Czo-Monzonita (10-35)";
+  else if (normalizedQ > 10 && normalizedA > 10) rockType = "Czo-Monzodiorita (10-35) Czo-Monzogabro (20-50)";
+  else if (normalizedQ > 20 && normalizedA > 20) rockType = "Czo-Diorita (20-45) Czo-Gabro (25-65)";
+  else rockType = "Roca no clasificada";
 
   return (
     <Card style={styles.diagramCard}>
@@ -116,35 +133,35 @@ const StreckeisenDiagram = ({ Q, A, P }) => {
 
         {/* Líneas de porcentaje en los lados del triángulo */}
         {Array.from({ length: 11 }).map((_, i) => {
-          const percent = i * 10
+          const percent = i * 10;
 
           // Puntos en los lados del triángulo para cada porcentaje
           const QPos = {
             x: trianglePoints[1].x + (trianglePoints[2].x - trianglePoints[1].x) * (percent / 100),
             y: trianglePoints[1].y,
-          }
+          };
           const APos = {
             x: trianglePoints[0].x - (trianglePoints[0].x - trianglePoints[1].x) * (percent / 100),
             y: trianglePoints[0].y + (trianglePoints[1].y - trianglePoints[0].y) * (percent / 100),
-          }
+          };
           const PPos = {
             x: trianglePoints[2].x - (trianglePoints[2].x - trianglePoints[0].x) * (percent / 100),
             y: trianglePoints[2].y - (trianglePoints[2].y - trianglePoints[0].y) * (percent / 100),
-          }
+          };
 
           // Puntos complementarios (100-percent) para las líneas discontinuas
           const QCompPos = {
             x: trianglePoints[1].x + (trianglePoints[2].x - trianglePoints[1].x) * ((100 - percent) / 100),
             y: trianglePoints[1].y,
-          }
+          };
           const ACompPos = {
             x: trianglePoints[0].x - (trianglePoints[0].x - trianglePoints[1].x) * ((100 - percent) / 100),
             y: trianglePoints[0].y + (trianglePoints[1].y - trianglePoints[0].y) * ((100 - percent) / 100),
-          }
+          };
           const PCompPos = {
             x: trianglePoints[2].x - (trianglePoints[2].x - trianglePoints[0].x) * ((100 - percent) / 100),
             y: trianglePoints[2].y - (trianglePoints[2].y - trianglePoints[0].y) * ((100 - percent) / 100),
-          }
+          };
 
           return (
             <React.Fragment key={i}>
@@ -167,7 +184,7 @@ const StreckeisenDiagram = ({ Q, A, P }) => {
                 {percent}%
               </SvgText>
             </React.Fragment>
-          )
+          );
         })}
 
         {/* Líneas principales de Q, A y P */}
@@ -195,8 +212,8 @@ const StreckeisenDiagram = ({ Q, A, P }) => {
         </SvgText>
       </Svg>
     </Card>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   diagramCard: {
@@ -205,6 +222,6 @@ const styles = StyleSheet.create({
   diagramTitle: {
     marginBottom: 8,
   },
-})
+});
 
-export default StreckeisenDiagram
+export default StreckeisenDiagram;

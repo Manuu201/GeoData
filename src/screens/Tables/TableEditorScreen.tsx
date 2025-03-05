@@ -15,6 +15,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Card, Icon, Input, Layout, Text, useTheme, Modal } from "@ui-kitten/components";
 import { EvaIconsPack } from '@ui-kitten/eva-icons';
 
+/**
+ * Pantalla de edición de una tabla geológica.
+ * Permite al usuario modificar el nombre de la tabla, editar celdas, agregar/eliminar filas y columnas,
+ * y guardar los cambios en la base de datos.
+ * 
+ * @returns {JSX.Element} - El componente de la pantalla de edición de tablas.
+ */
 export default function TableEditorScreen() {
   const db = useSQLiteContext();
   const navigation = useNavigation();
@@ -27,6 +34,7 @@ export default function TableEditorScreen() {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [isModified, setIsModified] = useState(false);
 
+  // Efecto para registrar la carga de datos de la tabla
   useEffect(() => {
     console.log("✏ Cargando datos de la tabla:", table);
   }, [table]);
@@ -54,6 +62,13 @@ export default function TableEditorScreen() {
     }, [isModified])
   );
 
+  /**
+   * Maneja el cambio de valor en una celda de la tabla.
+   * 
+   * @param {number} rowIndex - Índice de la fila.
+   * @param {number} colIndex - Índice de la columna.
+   * @param {string} value - Nuevo valor de la celda.
+   */
   const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
     setData((prevData) => {
       const newData = prevData.map((row) => [...row]);
@@ -63,6 +78,9 @@ export default function TableEditorScreen() {
     setIsModified(true);
   };
 
+  /**
+   * Guarda los cambios realizados en la tabla en la base de datos.
+   */
   async function handleSave() {
     console.log("📌 Guardando cambios en la tabla:", { name, data });
     await updateTableAsync(db, table.id, name, data.length, data[0]?.length || 0, data);
@@ -72,6 +90,9 @@ export default function TableEditorScreen() {
     setTimeout(() => navigation.goBack(), 1500);
   }
 
+  /**
+   * Maneja la navegación hacia atrás, mostrando una alerta si hay cambios sin guardar.
+   */
   const handleGoBack = () => {
     if (isModified) {
       Alert.alert(
@@ -87,16 +108,27 @@ export default function TableEditorScreen() {
     }
   };
 
+  /**
+   * Agrega una nueva fila a la tabla.
+   */
   const addRow = () => {
     setData((prevData) => [...prevData, new Array(prevData[0].length).fill("")]);
     setIsModified(true);
   };
 
+  /**
+   * Agrega una nueva columna a la tabla.
+   */
   const addColumn = () => {
     setData((prevData) => prevData.map((row) => [...row, ""]));
     setIsModified(true);
   };
 
+  /**
+   * Muestra una alerta de confirmación para eliminar una fila.
+   * 
+   * @param {number} index - Índice de la fila a eliminar.
+   */
   const confirmRemoveRow = (index: number) => {
     Alert.alert("Eliminar Fila", "¿Estás seguro de que deseas eliminar esta fila?", [
       { text: "Cancelar", style: "cancel" },
@@ -104,6 +136,11 @@ export default function TableEditorScreen() {
     ]);
   };
 
+  /**
+   * Muestra una alerta de confirmación para eliminar una columna.
+   * 
+   * @param {number} index - Índice de la columna a eliminar.
+   */
   const confirmRemoveColumn = (index: number) => {
     Alert.alert("Eliminar Columna", "¿Estás seguro de que deseas eliminar esta columna?", [
       { text: "Cancelar", style: "cancel" },
@@ -111,6 +148,11 @@ export default function TableEditorScreen() {
     ]);
   };
 
+  /**
+   * Elimina una fila de la tabla.
+   * 
+   * @param {number} index - Índice de la fila a eliminar.
+   */
   const removeRow = (index: number) => {
     if (data.length > 1) {
       setData((prevData) => prevData.filter((_, i) => i !== index));
@@ -120,6 +162,11 @@ export default function TableEditorScreen() {
     }
   };
 
+  /**
+   * Elimina una columna de la tabla.
+   * 
+   * @param {number} index - Índice de la columna a eliminar.
+   */
   const removeColumn = (index: number) => {
     if (data[0].length > 1) {
       setData((prevData) => prevData.map((row) => row.filter((_, i) => i !== index)));
@@ -208,6 +255,9 @@ export default function TableEditorScreen() {
   );
 }
 
+/**
+ * Estilos del componente.
+ */
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { flex: 1, padding: 16 },

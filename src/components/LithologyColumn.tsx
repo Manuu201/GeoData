@@ -4,7 +4,13 @@ import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
 import rockTypes from '../data/rockTypes';
 import StructureTypes from '../data/structuralTypes';
 import FossilTypes from '../data/fossilTypes';
-
+/**
+ * Componente que representa una columna litológica con capas de roca, estructuras y fósiles.
+ * Permite interactuar con las capas para editarlas, eliminarlas o moverlas.
+ * 
+ * @param {LithologyColumn} props - Propiedades del componente.
+ * @returns {JSX.Element} - El componente de la columna litológica.
+ */
 const LithologyColumn = ({ layers, onDeleteLayer, onEditLayer, onMoveLayer }) => {
   const totalThickness = layers.reduce((sum, layer) => sum + layer.thickness, 0);
   const scaleFactor = 15; // Factor de escala para convertir metros a píxeles

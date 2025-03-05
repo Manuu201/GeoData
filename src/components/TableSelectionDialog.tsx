@@ -4,6 +4,14 @@ import { Button, Card, Input, Modal, Text, Icon, Select, SelectItem, IndexPath }
 import type { TableEntity } from "../database/database";
 import React from "react";
 
+/**
+ * Propiedades del componente TableSelectionDialog.
+ * 
+ * @property {boolean} visible - Indica si el diálogo es visible.
+ * @property {Function} onDismiss - Función que se ejecuta al cerrar el diálogo.
+ * @property {TableEntity[]} tables - Lista de tablas disponibles.
+ * @property {Function} onSelectTable - Función que se ejecuta al seleccionar una tabla.
+ */
 interface TableSelectionDialogProps {
   visible: boolean;
   onDismiss: () => void;
@@ -11,32 +19,45 @@ interface TableSelectionDialogProps {
   onSelectTable: (table: TableEntity) => void;
 }
 
+/**
+ * Diálogo para seleccionar una tabla de una lista.
+ * 
+ * @param {TableSelectionDialogProps} props - Propiedades del componente.
+ * @returns {JSX.Element} - El componente renderizado.
+ */
 export default function TableSelectionDialog({ visible, onDismiss, tables, onSelectTable }: TableSelectionDialogProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSortIndex, setSelectedSortIndex] = useState(new IndexPath(0));
+  const [searchQuery, setSearchQuery] = useState(""); // Estado para la consulta de búsqueda
+  const [selectedSortIndex, setSelectedSortIndex] = useState(new IndexPath(0)); // Estado para el índice de ordenación seleccionado
 
-  const sortOptions = ["ID", "Nombre", "Fecha"];
-  const sortBy = sortOptions[selectedSortIndex.row];
+  const sortOptions = ["ID", "Nombre", "Fecha"]; // Opciones de ordenación
+  const sortBy = sortOptions[selectedSortIndex.row]; // Criterio de ordenación seleccionado
 
-  const screenWidth = Dimensions.get("window").width;
-  const cardWidth = screenWidth / 2 - 24; // Ajuste para márgenes
+  const screenWidth = Dimensions.get("window").width; // Ancho de la pantalla
+  const cardWidth = screenWidth / 2 - 24; // Ancho de las tarjetas ajustado para márgenes
 
-  // Filtrar y ordenar tablas
+  /**
+   * Filtra y ordena las tablas según la consulta de búsqueda y el criterio de ordenación.
+   * 
+   * @returns {TableEntity[]} - Lista de tablas filtradas y ordenadas.
+   */
   const filteredTables = tables
-    .filter((table) => table.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((table) => table.name.toLowerCase().includes(searchQuery.toLowerCase())) // Filtrar por nombre
     .sort((a, b) => {
-      if (sortBy === "ID") return a.id - b.id;
-      if (sortBy === "Nombre") return a.name.localeCompare(b.name);
-      if (sortBy === "Fecha") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (sortBy === "ID") return a.id - b.id; // Ordenar por ID
+      if (sortBy === "Nombre") return a.name.localeCompare(b.name); // Ordenar por nombre
+      if (sortBy === "Fecha") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); // Ordenar por fecha
       return 0;
     });
 
   return (
     <Modal visible={visible} backdropStyle={styles.backdrop} onBackdropPress={onDismiss}>
       <Card disabled={true} style={styles.dialog}>
+        {/* Título del diálogo */}
         <Text category="h5" style={styles.title}>
           Seleccionar Tabla
         </Text>
+
+        {/* Campo de búsqueda */}
         <Input
           placeholder="Buscar por nombre..."
           value={searchQuery}
@@ -44,6 +65,8 @@ export default function TableSelectionDialog({ visible, onDismiss, tables, onSel
           accessoryLeft={(props) => <Icon {...props} name="search-outline" />}
           style={styles.searchInput}
         />
+
+        {/* Selector de ordenación */}
         <Select
           selectedIndex={selectedSortIndex}
           onSelect={(index) => setSelectedSortIndex(index as IndexPath)}
@@ -54,6 +77,8 @@ export default function TableSelectionDialog({ visible, onDismiss, tables, onSel
             <SelectItem key={index} title={option} />
           ))}
         </Select>
+
+        {/* Lista de tablas */}
         <FlatList
           data={filteredTables}
           renderItem={({ item }) => (
@@ -72,6 +97,8 @@ export default function TableSelectionDialog({ visible, onDismiss, tables, onSel
           numColumns={2}
           contentContainerStyle={styles.list}
         />
+
+        {/* Botón para cerrar el diálogo */}
         <Button onPress={onDismiss} style={styles.closeButton} status="danger">
           Cerrar
         </Button>
@@ -80,6 +107,7 @@ export default function TableSelectionDialog({ visible, onDismiss, tables, onSel
   );
 }
 
+// Estilos del componente
 const styles = StyleSheet.create({
   backdrop: {
     backgroundColor: "rgba(0, 0, 0, 0.5)",

@@ -4,6 +4,13 @@ import { Layout, Text, Card, Button, Icon, TopNavigation, useTheme, TopNavigatio
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
+/**
+ * Pantalla principal de la aplicación que muestra las funcionalidades disponibles.
+ * 
+ * @param {Object} props - Propiedades de la pantalla.
+ * @param {Object} props.navigation - Objeto de navegación para redirigir a otras pantallas.
+ * @returns {JSX.Element} - El componente de la pantalla de inicio.
+ */
 export default function HomeScreen({ navigation }) {
   const theme = useTheme();
 
@@ -14,6 +21,7 @@ export default function HomeScreen({ navigation }) {
     <TopNavigationAction icon={SettingsIcon} onPress={() => navigation.navigate("SettingsScreen")} />
   );
 
+  // Lista de funcionalidades disponibles
   const features = [
     {
       name: "Tablas",
@@ -59,6 +67,13 @@ export default function HomeScreen({ navigation }) {
     },
   ];
 
+  /**
+   * Renderiza una tarjeta de funcionalidad.
+   * 
+   * @param {Object} feature - La funcionalidad a renderizar.
+   * @param {number} index - Índice de la funcionalidad en la lista.
+   * @returns {JSX.Element} - El componente de la tarjeta de funcionalidad.
+   */
   const renderFeatureCard = (feature, index) => (
     <Animated.View
       key={index}

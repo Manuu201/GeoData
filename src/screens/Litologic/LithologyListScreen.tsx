@@ -24,27 +24,34 @@ import { Snackbar } from "react-native-paper"; // Importamos Snackbar desde reac
 
 type LithologyListScreenNavigationProp = StackNavigationProp<RootStackParamList, "LithologyListScreen">;
 
+/**
+ * Pantalla que muestra una lista de columnas litológicas con opciones de búsqueda, filtrado y eliminación.
+ * 
+ * @returns {JSX.Element} - El componente renderizado.
+ */
 const LithologyListScreen = () => {
   const navigation = useNavigation<LithologyListScreenNavigationProp>();
   const theme = useTheme();
   const db = useSQLiteContext();
 
-  const [columns, setColumns] = useState<LithologyColumnEntity[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortByDate, setSortByDate] = useState(false);
-  const [filter, setFilter] = useState<"today" | "week" | "month" | "all">("all");
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [columnToDelete, setColumnToDelete] = useState<LithologyColumnEntity | null>(null);
+  const [columns, setColumns] = useState<LithologyColumnEntity[]>([]); // Estado para almacenar las columnas
+  const [searchQuery, setSearchQuery] = useState(""); // Estado para la consulta de búsqueda
+  const [sortByDate, setSortByDate] = useState(false); // Estado para ordenar por fecha
+  const [filter, setFilter] = useState<"today" | "week" | "month" | "all">("all"); // Estado para el filtro de fecha
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false); // Estado para controlar la visibilidad del modal de eliminación
+  const [columnToDelete, setColumnToDelete] = useState<LithologyColumnEntity | null>(null); // Estado para almacenar la columna a eliminar
   const [snackbarVisible, setSnackbarVisible] = useState(false); // Estado para controlar la visibilidad del Snackbar
   const [snackbarMessage, setSnackbarMessage] = useState(""); // Mensaje del Snackbar
 
-  // Cargar columnas desde la base de datos
+  /**
+   * Carga las columnas desde la base de datos.
+   */
   const loadColumns = useCallback(async () => {
     const fetchedColumns = await fetchColumnsAsync(db);
     if (sortByDate) {
-      fetchedColumns.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      fetchedColumns.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); // Ordenar por fecha si es necesario
     }
-    setColumns(fetchedColumns);
+    setColumns(fetchedColumns); // Actualizar el estado con las columnas obtenidas
   }, [db, sortByDate]);
 
   // Recargar columnas cuando la pantalla está enfocada
@@ -58,17 +65,25 @@ const LithologyListScreen = () => {
     loadColumns();
   }, [loadColumns]);
 
-  // Manejar la eliminación de una columna
+  /**
+   * Maneja la eliminación de una columna.
+   * 
+   * @param {number} id - ID de la columna a eliminar.
+   */
   const handleDelete = async (id: number) => {
-    await deleteColumnAsync(db, id);
-    setDeleteModalVisible(false);
-    setColumnToDelete(null);
-    loadColumns();
+    await deleteColumnAsync(db, id); // Eliminar la columna de la base de datos
+    setDeleteModalVisible(false); // Ocultar el modal de eliminación
+    setColumnToDelete(null); // Limpiar la columna seleccionada para eliminar
+    loadColumns(); // Recargar las columnas
     setSnackbarMessage("Columna borrada exitosamente"); // Establecer el mensaje del Snackbar
     setSnackbarVisible(true); // Mostrar el Snackbar
   };
 
-  // Filtrar columnas según la búsqueda y el filtro seleccionado
+  /**
+   * Filtra las columnas según la búsqueda y el filtro seleccionado.
+   * 
+   * @returns {LithologyColumnEntity[]} - Columnas filtradas.
+   */
   const getFilteredColumns = () => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -81,21 +96,26 @@ const LithologyListScreen = () => {
         const createdAt = new Date(column.createdAt);
         switch (filter) {
           case "today":
-            return createdAt >= today;
+            return createdAt >= today; // Filtrar por hoy
           case "week":
-            return createdAt >= startOfWeek;
+            return createdAt >= startOfWeek; // Filtrar por esta semana
           case "month":
-            return createdAt >= startOfMonth;
+            return createdAt >= startOfMonth; // Filtrar por este mes
           default:
-            return true;
+            return true; // No filtrar
         }
       })
-      .filter((column) => column.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      .filter((column) => column.name.toLowerCase().includes(searchQuery.toLowerCase())); // Filtrar por búsqueda
   };
 
   const filteredColumns = getFilteredColumns();
 
-  // Renderizar cada ítem de la lista
+  /**
+   * Renderiza cada ítem de la lista de columnas.
+   * 
+   * @param {Object} item - Objeto que representa una columna litológica.
+   * @returns {JSX.Element} - Tarjeta con la información de la columna.
+   */
   const renderItem = ({ item }: { item: LithologyColumnEntity }) => (
     <Animatable.View animation="fadeIn" duration={500}>
       <Card
@@ -121,7 +141,15 @@ const LithologyListScreen = () => {
     </Animatable.View>
   );
 
-  // Componente de botón de filtro
+  /**
+   * Componente de botón de filtro.
+   * 
+   * @param {Object} props - Propiedades del botón de filtro.
+   * @param {string} props.label - Etiqueta del botón.
+   * @param {boolean} props.active - Indica si el botón está activo.
+   * @param {Function} props.onPress - Función que se ejecuta al presionar el botón.
+   * @returns {JSX.Element} - Botón de filtro.
+   */
   const FilterButton = ({ label, active, onPress }) => (
     <Button
       appearance={active ? "filled" : "outline"}
@@ -134,7 +162,11 @@ const LithologyListScreen = () => {
     </Button>
   );
 
-  // Componente de filtros
+  /**
+   * Componente de filtros.
+   * 
+   * @returns {JSX.Element} - Contenedor de botones de filtro.
+   */
   const Filters = () => (
     <Layout style={{ flexDirection: "row", marginBottom: 16 }}>
       <FilterButton label="Hoy" active={filter === "today"} onPress={() => setFilter("today")} />

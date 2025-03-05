@@ -86,8 +86,33 @@ Descripción detallada de la pantalla de notas, incluyendo la lógica y la inter
     \item \textbf{NoteEditorScreen.tsx}: Pantalla de edición de notas, donde se pueden modificar los contenidos de una nota existente. Dentro de esta pantalla se puede agregar imagenes y tablas previamente ya creadas en la aplicacion.
 \end{itemize}
 
+\subsubsection{Litologic}
+Descripción detallada de la pantalla de litología, incluyendo la lógica y la interfaz de usuario.
+\begin{itemize}
+    \item \textbf{LithologicListScreen.tsx}: Archivo principal de la pantalla de litología, aqui se permite crear litologias, ver las litologias existentes y eliminarlas, ademas de poder ordenarlas segun el filtro que convenga. 
+    \item \textbf{LithologicFormScreen.tsx}: Pantalla de edición de litologias, donde se pueden modificar los contenidos de una litologia existente. Dentro de esta pantalla se puede agregar imagenes y tablas previamente ya creadas en la aplicacion.
+\end{itemize}
+
+\subsubsection{StructuralDatas}
+Descripción detallada de la pantalla de datos estructurales, incluyendo la lógica y la interfaz de usuario.
+\begin{itemize}
+    \item \textbf{StructuralDatasScreen.tsx}: Archivo principal de la pantalla de datos estructurales, aqui se permite crear datos estructurales, ver los datos estructurales existentes y eliminarlos, ademas de poder ordenarlos segun el filtro que convenga.
+    \item \textbf{PhotoSelectorScreen.tsx}: Pantalla de selección de fotos, donde se pueden elegir una foto existente para asociarla a un dato estructural. Dentro de esta pantalla se pueden ver las fotos existentes y seleccionar una de ellas.
+\end{itemize}
+
+
 \subsection{components}
 
+\subsubsection{Reports}
+\begin{itemize}
+    \item \textbf{ReportForm.tsx}: Componente relacionado con la creación y edición de informes, permite al usuario ingresar los datos necesarios para crear un informe, que cambia dependiendo del tipo de roca seleccionada.
+    \item \textbf{TableEditor.tsx}: Componente relacionado con la edición de tablas, permite al usuario modificar los contenidos de una tabla existente, agregando o eliminando filas y columnas según sea necesario.
+    \item \textbf{PhotoSection}: Componente relacionado con la visualización de fotos en un informe, permite al usuario ver una foto y añadir en el informe.
+    \item \textbf{StreckeisenDiagram.tsx}: Componente relacionado con la visualización de un diagrama de Streckeisen, permite al usuario ver un diagrama de clasificación de rocas en base a los valores dados en la tabla creada previamente.
+    \item \textbf{PDFGenerator.tsx}: Componente relacionado con la generación de archivos PDF, permite al usuario generar un archivo PDF con todos los datos del reporte creado.
+\end{itemize}
+
+\subsubsection{Otros}
 \begin{itemize}
     \item \textbf{ImageSelectionDialog.tsx}: Componente relacionado con la selección de imágenes, permite al usuario elegir una imagen creada con anterioridad en la aplicacion, donde se puede ordenar por varios parametros existentes.
     \item \textbf{InsertOptionsDialog.tsx}: Componente relacionado con la inserción de elementos (tablas o imagenes) en las notas, permite al usuario elegir entre insertar una imagen o una tabla en la nota que se esta creando o editando.

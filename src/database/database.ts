@@ -1,10 +1,5 @@
 import { SQLiteDatabase } from 'expo-sqlite';
 
-export interface ItemEntity {
-  id: number;
-  done: boolean;
-  value: string;
-}
 
 export interface NoteEntity {
   id: number;
@@ -52,22 +47,6 @@ export interface ReportEntity {
   updatedAt: string; // Fecha de actualización
 }
 
-
-export interface LithologyEntity {
-  id: number;
-  type: 'sedimentary' | 'igneous' | 'metamorphic';
-  subtype: string;
-  thickness: number;
-  structure: string;
-  fossils: string;
-  imageUri?: string;
-  notes?: string;
-  geologicalEvent?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-
 export interface LithologyColumnEntity {
   id: number;
   name: string;
@@ -88,38 +67,6 @@ export interface LithologyLayerEntity {
   order: number; // Asegúrate de que este campo esté definido
 }
 
-
-/**
- * Agrega un nuevo item a la lista de tareas.
- */
-export async function addItemAsync(db: SQLiteDatabase, text: string): Promise<void> {
-  if (text !== '') {
-    await db.runAsync('INSERT INTO items (done, value) VALUES (?, ?);', false, text);
-  }
-}
-
-/**
- * Marca un item como completado.
- */
-export async function updateItemAsDoneAsync(db: SQLiteDatabase, id: number): Promise<void> {
-  await db.runAsync('UPDATE items SET done = ? WHERE id = ?;', true, id);
-}
-
-/**
- * Elimina un item de la lista de tareas.
- */
-export async function deleteItemAsync(db: SQLiteDatabase, id: number): Promise<void> {
-  await db.runAsync('DELETE FROM items WHERE id = ?;', id);
-}
-
-/**
- * Obtiene todos los items de la base de datos.
- */
-export async function fetchItemsAsync(db: SQLiteDatabase): Promise<{ todoItems: ItemEntity[]; doneItems: ItemEntity[] }> {
-  const todoItems = await db.getAllAsync<ItemEntity>('SELECT * FROM items WHERE done = ?;', false);
-  const doneItems = await db.getAllAsync<ItemEntity>('SELECT * FROM items WHERE done = ?;', true);
-  return { todoItems, doneItems };
-}
 
 /**
  * CRUD de Notas
@@ -412,55 +359,9 @@ export async function deleteReportAsync(db: SQLiteDatabase, id: number): Promise
   }
 }
 
-export async function addLithologyAsync(
-  db: SQLiteDatabase,
-  type: 'sedimentary' | 'igneous' | 'metamorphic',
-  subtype: string,
-  thickness: number,
-  structure: string,
-  fossils: string,
-  imageUri?: string,
-  notes?: string,
-  geologicalEvent?: string
-): Promise<void> {
-  const createdAt = new Date().toISOString();
-  const updatedAt = createdAt;
+// CRUD de Litologías
 
-  await db.runAsync(
-    'INSERT INTO lithologies (type, subtype, thickness, structure, fossils, imageUri, notes, geologicalEvent, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);',
-    type, subtype, thickness, structure, fossils, imageUri || null, notes || null, geologicalEvent || null, createdAt, updatedAt
-  );
-}
-
-export async function fetchLithologiesAsync(db: SQLiteDatabase): Promise<LithologyEntity[]> {
-  return await db.getAllAsync<LithologyEntity>('SELECT * FROM lithologies;');
-}
-
-export async function updateLithologyAsync(
-  db: SQLiteDatabase,
-  id: number,
-  type: 'sedimentary' | 'igneous' | 'metamorphic',
-  subtype: string,
-  thickness: number,
-  structure: string,
-  fossils: string,
-  imageUri?: string,
-  notes?: string,
-  geologicalEvent?: string
-): Promise<void> {
-  const updatedAt = new Date().toISOString();
-
-  await db.runAsync(
-    'UPDATE lithologies SET type = ?, subtype = ?, thickness = ?, structure = ?, fossils = ?, imageUri = ?, notes = ?, geologicalEvent = ?, updatedAt = ? WHERE id = ?;',
-    type, subtype, thickness, structure, fossils, imageUri || null, notes || null, geologicalEvent || null, updatedAt, id
-  );
-}
-
-export async function deleteLithologyAsync(db: SQLiteDatabase, id: number): Promise<void> {
-  await db.runAsync('DELETE FROM lithologies WHERE id = ?;', id);
-}
-
-
+// Crear una nueva columna litográfica
 export async function createColumnAsync(db: SQLiteDatabase, name: string): Promise<number> {
   const createdAt = new Date().toISOString();
   const updatedAt = createdAt;
@@ -479,7 +380,7 @@ export async function createColumnAsync(db: SQLiteDatabase, name: string): Promi
     throw error;
   }
 }
-
+// Actualizar una columna litográfica
 export async function addLayerAsync(
   db: SQLiteDatabase,
   columnId: number,
@@ -513,6 +414,7 @@ export async function addLayerAsync(
   }
 }
 
+// Recuperar todas las columnas litográficas
 export async function fetchColumnsAsync(db: SQLiteDatabase): Promise<LithologyColumnEntity[]> {
   console.log('Recuperando todas las columnas litográficas'); // Log para depuración
 
@@ -526,6 +428,7 @@ export async function fetchColumnsAsync(db: SQLiteDatabase): Promise<LithologyCo
   }
 }
 
+// Recuperar una columna litográfica por su ID
 export async function fetchLayersAsync(db: SQLiteDatabase, columnId: number): Promise<LithologyLayerEntity[]> {
   console.log(`Recuperando capas para la columna ${columnId}`);
 
@@ -542,6 +445,8 @@ export async function fetchLayersAsync(db: SQLiteDatabase, columnId: number): Pr
   }
 }
 
+
+// Actualizar el orden de las capas
 export async function updateLayerOrderAsync(
   db: SQLiteDatabase,
   id: number,
@@ -563,6 +468,7 @@ export async function updateLayerOrderAsync(
   }
 }
 
+// Actualizar una capa litográfica
 export async function updateLayerAsync(
   db: SQLiteDatabase,
   id: number,
@@ -600,6 +506,7 @@ export async function deleteLayerAsync(db: SQLiteDatabase, id: number): Promise<
   }
 }
 
+// Eliminar una columna litográfica
 export async function deleteColumnAsync(db: SQLiteDatabase, id: number): Promise<void> {
   console.log(`Eliminando columna con ID: ${id}`); // Log para depuración
 
@@ -628,12 +535,6 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
 
   if (currentDbVersion === 0) {
     await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS items (
-        id INTEGER PRIMARY KEY NOT NULL,
-        done INT,
-        value TEXT
-      );
-
       CREATE TABLE IF NOT EXISTS notes (
         id INTEGER PRIMARY KEY NOT NULL,
         title TEXT,

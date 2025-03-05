@@ -2,34 +2,64 @@ import React from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import { Button, Icon, Input, Text } from "@ui-kitten/components";
 
+/**
+ * Componente que permite editar una tabla de datos dinámica.
+ * 
+ * @param {Object} props - Propiedades del componente.
+ * @param {Array<Array<string>>} props.tableData - Datos de la tabla.
+ * @param {Function} props.setTableData - Función para actualizar los datos de la tabla.
+ * @returns {JSX.Element} - El componente renderizado.
+ */
 const TableEditor = ({ tableData, setTableData }) => {
+  /**
+   * Maneja el cambio de valor en una celda de la tabla.
+   * 
+   * @param {number} rowIndex - Índice de la fila.
+   * @param {number} colIndex - Índice de la columna.
+   * @param {string} value - Nuevo valor de la celda.
+   */
   const handleTableChange = (rowIndex, colIndex, value) => {
     const newRows = [...tableData];
     newRows[rowIndex][colIndex] = value;
     setTableData(newRows);
   };
 
+  /**
+   * Agrega una nueva fila a la tabla.
+   */
   const addRow = () => {
     setTableData([...tableData, Array(tableData[0]?.length || 5).fill("")]);
   };
 
+  /**
+   * Elimina la última fila de la tabla.
+   */
   const removeRow = () => {
     if (tableData.length > 1) setTableData(tableData.slice(0, -1));
   };
 
+  /**
+   * Agrega una nueva columna a la tabla.
+   */
   const addColumn = () => {
     setTableData(tableData.map((row) => [...row, ""]));
   };
 
+  /**
+   * Elimina la última columna de la tabla.
+   */
   const removeColumn = () => {
     if (tableData[0]?.length > 1) setTableData(tableData.map((row) => row.slice(0, -1)));
   };
 
   return (
     <View style={styles.tableCard}>
+      {/* Título de la tabla */}
       <Text category="h6" style={styles.tableTitle}>
         Tabla de Datos
       </Text>
+
+      {/* Controles para agregar/eliminar filas y columnas */}
       <View style={styles.tableControls}>
         <View style={styles.buttonGroup}>
           <Button size="small" onPress={addRow} accessoryLeft={(props) => <Icon {...props} name="plus-outline" />}>
@@ -48,6 +78,8 @@ const TableEditor = ({ tableData, setTableData }) => {
           </Button>
         </View>
       </View>
+
+      {/* Contenedor de la tabla con scroll horizontal */}
       <ScrollView horizontal showsHorizontalScrollIndicator={true}>
         <View style={styles.tableContainer}>
           {tableData.map((row, rowIndex) => (
@@ -68,6 +100,7 @@ const TableEditor = ({ tableData, setTableData }) => {
   );
 };
 
+// Estilos del componente
 const styles = StyleSheet.create({
   tableCard: {
     marginBottom: 16,
@@ -112,10 +145,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   tableCell: {
-    width: 150, // Aumentamos el ancho de las celdas
-    height: 60, // Aumentamos la altura de las celdas
+    width: 150, // Ancho de las celdas
+    height: 60, // Altura de las celdas
     margin: 2,
-    padding: 12, // Aumentamos el padding para más espacio interno
+    padding: 12, // Espaciado interno
     borderWidth: 1,
     borderColor: "#E4E9F2",
     borderRadius: 4,

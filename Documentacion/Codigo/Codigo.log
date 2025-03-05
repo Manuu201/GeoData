@@ -1,10 +1,10 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.1.20)  11 FEB 2025 22:04
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.1.20)  4 MAR 2025 15:08
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**"c:/Users/manue/Desktop/Practica - GeoData/Sprint 1/GeoData/Documentacion/Codigo/Codigo.tex"
-(c:/Users/manue/Desktop/Practica - GeoData/Sprint 1/GeoData/Documentacion/Codigo/Codigo.tex
+**c:/Users/manue/Desktop/Proyecto/GeoData-1/Documentacion/Codigo/Codigo.tex
+(c:/Users/manue/Desktop/Proyecto/GeoData-1/Documentacion/Codigo/Codigo.tex
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
 (C:\Users\manue\AppData\Local\Programs\MiKTeX\tex/latex/base\article.cls
@@ -306,7 +306,7 @@ LaTeX Info: Redefining \% on input line 1.
 
  [1
 
-{C:/Users/manue/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] [2] [3] [4] [5] [6] (Codigo.aux
+{C:/Users/manue/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] [2] [3] [4] [5] [6] [7] (Codigo.aux
 LaTeX Info: Redefining \. on input line 11.
 LaTeX Info: Redefining \% on input line 11.
 )
@@ -315,20 +315,20 @@ LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
  ***********
 Package rerunfilecheck Info: File `Codigo.out' has not changed.
-(rerunfilecheck)             Checksum: D106103F5FE96BAF793601A2EBB991A6;1332.
+(rerunfilecheck)             Checksum: 06D2D7DE2B93980E786926A9EABF4A75;1784.
  ) 
 Here is how much of TeX's memory you used:
- 10539 strings out of 474486
- 166787 string characters out of 5743755
- 1938542 words of memory out of 5000000
- 32689 multiletter control sequences out of 15000+600000
+ 10548 strings out of 474486
+ 166777 string characters out of 5743755
+ 1937542 words of memory out of 5000000
+ 32693 multiletter control sequences out of 15000+600000
  564699 words of font info for 59 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,6n,79p,915b,592s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,6n,79p,896b,592s stack positions out of 10000i,1000n,20000p,200000b,200000s
  <C:\Users\manue\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm1200.pk><C:/Users/manue/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/manue/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/manue/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr17.pfb>
-Output written on Codigo.pdf (6 pages, 71001 bytes).
+Output written on Codigo.pdf (7 pages, 77355 bytes).
 PDF statistics:
- 117 PDF objects out of 1000 (max. 8388607)
- 20 named destinations out of 1000 (max. 500000)
- 97 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 144 PDF objects out of 1000 (max. 8388607)
+ 25 named destinations out of 1000 (max. 500000)
+ 129 words of extra memory for PDF output out of 10000 (max. 10000000)
 

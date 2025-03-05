@@ -24,6 +24,13 @@ import { Snackbar } from "react-native-paper";
 
 type ReportsScreenProps = NativeStackScreenProps<RootStackParamList, "ReportsScreen">;
 
+/**
+ * Pantalla que muestra una lista de reportes con funcionalidades de filtrado, ordenación y búsqueda.
+ * Permite al usuario crear, editar y eliminar reportes.
+ * 
+ * @param {ReportsScreenProps} props - Propiedades de la pantalla.
+ * @returns {JSX.Element} - El componente de la pantalla de reportes.
+ */
 const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
   const [reports, setReports] = useState<ReportEntity[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,7 +43,9 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
   const db = useSQLiteContext();
   const theme = useTheme();
 
-  // Cargar reportes desde la base de datos
+  /**
+   * Carga los reportes desde la base de datos.
+   */
   const loadReports = useCallback(async () => {
     const fetchedReports = await fetchReportsAsync(db);
     if (sortByDate) {
@@ -56,7 +65,11 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
     loadReports();
   }, [loadReports]);
 
-  // Manejar la eliminación de un reporte
+  /**
+   * Maneja la eliminación de un reporte.
+   * 
+   * @param {number} id - ID del reporte a eliminar.
+   */
   const handleDeleteReport = async (id: number) => {
     await deleteReportAsync(db, id);
     setDeleteModalVisible(false);
@@ -66,7 +79,11 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
     setSnackbarVisible(true);
   };
 
-  // Filtrar reportes según la búsqueda y el filtro seleccionado
+  /**
+   * Filtra los reportes según la búsqueda y el filtro seleccionado.
+   * 
+   * @returns {ReportEntity[]} - Lista de reportes filtrados.
+   */
   const getFilteredReports = () => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -93,7 +110,12 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
 
   const filteredReports = getFilteredReports();
 
-  // Renderizar cada ítem de la lista
+  /**
+   * Renderiza cada ítem de la lista de reportes.
+   * 
+   * @param {Object} item - El objeto del reporte a renderizar.
+   * @returns {JSX.Element} - El componente de la tarjeta de reporte.
+   */
   const renderReportItem = ({ item }: { item: ReportEntity }) => (
     <Animated.View entering={FadeInRight} exiting={FadeOutLeft} layout={LayoutAnimation.springify()}>
       <Card style={styles(theme).reportItem}>
@@ -119,7 +141,15 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
     </Animated.View>
   );
 
-  // Componente de botón de filtro
+  /**
+   * Componente de botón de filtro.
+   * 
+   * @param {Object} props - Propiedades del botón de filtro.
+   * @param {string} props.label - Etiqueta del botón.
+   * @param {boolean} props.active - Indica si el filtro está activo.
+   * @param {Function} props.onPress - Función que se ejecuta al presionar el botón.
+   * @returns {JSX.Element} - El componente del botón de filtro.
+   */
   const FilterButton = ({ label, active, onPress }) => (
     <Button
       appearance={active ? "filled" : "outline"}
@@ -132,7 +162,11 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
     </Button>
   );
 
-  // Componente de filtros
+  /**
+   * Componente que contiene los botones de filtro.
+   * 
+   * @returns {JSX.Element} - El componente de los filtros.
+   */
   const Filters = () => (
     <Layout style={{ flexDirection: "row", marginBottom: 16 }}>
       <FilterButton label="Hoy" active={filter === "today"} onPress={() => setFilter("today")} />
@@ -142,11 +176,15 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
     </Layout>
   );
 
-  // Íconos
   const SortIcon = (props) => <Icon {...props} name={sortByDate ? "calendar" : "calendar-outline"} />;
   const AddIcon = (props) => <Icon {...props} name="plus-outline" />;
 
-  // Estilos dinámicos
+  /**
+   * Estilos dinámicos del componente.
+   * 
+   * @param {Object} theme - Tema de la aplicación.
+   * @returns {Object} - Objeto de estilos.
+   */
   const styles = (theme) =>
     StyleSheet.create({
       safeArea: {

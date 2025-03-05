@@ -7,7 +7,13 @@ interface PhotoComponentProps {
   photo: PhotoEntity;
   onDelete: () => void;
 }
-
+/**
+ * Componente que muestra una foto con un botón para eliminarla.
+ * Si la foto no está disponible, muestra un mensaje de advertencia.
+ * 
+ * @param {PhotoComponentProps} props - Propiedades del componente.
+ * @returns {JSX.Element} - El componente de la foto.
+ */
 export default function PhotoComponent({ photo, onDelete }: PhotoComponentProps) {
   console.log("Photo data:", photo); // Verifica el contenido de la foto
 

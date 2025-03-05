@@ -4,6 +4,27 @@ import { View, StyleSheet } from "react-native";
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 import RNPickerSelect from "react-native-picker-select";
 
+/**
+ * Props para el componente ReportForm.
+ * 
+ * @property {string} title - Título del reporte.
+ * @property {(title: string) => void} setTitle - Función para actualizar el título del reporte.
+ * @property {string} type - Tipo de reporte (por ejemplo, "sedimentary", "igneous", "metamorphic", "free").
+ * @property {(type: string) => void} setType - Función para actualizar el tipo de reporte.
+ * @property {string[]} dynamicTexts - Etiquetas para los campos dinámicos del formulario.
+ * @property {string[]} dynamicTextsValues - Valores de los campos dinámicos del formulario.
+ * @property {(values: string[]) => void} setDynamicTextsValues - Función para actualizar los valores de los campos dinámicos.
+ * @property {string} text2 - Texto libre del reporte.
+ * @property {(text: string) => void} setText2 - Función para actualizar el texto libre.
+ */
+
+/**
+ * Componente que representa un formulario para crear o editar un reporte.
+ * 
+ * @param {ReportForm} props - Las propiedades del componente.
+ * @returns {JSX.Element} - El componente renderizado.
+ */
+
 const ReportForm = ({
   title,
   setTitle,

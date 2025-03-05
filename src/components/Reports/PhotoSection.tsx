@@ -4,6 +4,24 @@ import { Button, Icon, Text, Card } from "@ui-kitten/components";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 
+
+/**
+ * Props para el componente PhotoSection.
+ * 
+ * @property {string | null} photoUri - URI de la foto capturada.
+ * @property {(uri: string | null) => void} setPhotoUri - Función para actualizar la URI de la foto.
+ * @property {number} latitude - Latitud de la ubicación donde se tomó la foto.
+ * @property {(latitude: number) => void} setLatitude - Función para actualizar la latitud.
+ * @property {number} longitude - Longitud de la ubicación donde se tomó la foto.
+ * @property {(longitude: number) => void} setLongitude - Función para actualizar la longitud.
+ */
+
+/**
+ * Componente que permite al usuario tomar una foto, capturar su ubicación y mostrar la imagen junto con las coordenadas.
+ * 
+ * @param {PhotoSection} props - Las propiedades del componente.
+ * @returns {JSX.Element} - El componente renderizado.
+ */
 const PhotoSection = ({ photoUri, setPhotoUri, latitude, setLatitude, longitude, setLongitude }) => {
   const [showCropOption, setShowCropOption] = useState(false); // Estado para mostrar la opción de recorte
 

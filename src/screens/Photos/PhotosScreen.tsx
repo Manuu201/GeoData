@@ -11,6 +11,12 @@ import React from "react";
 
 const ITEMS_PER_PAGE = 5;
 
+/**
+ * Componente que muestra una lista de fotos geológicas con funcionalidades de filtrado, ordenación y paginación.
+ * Permite al usuario tomar nuevas fotos, ver detalles de las fotos, eliminarlas y ver su ubicación en un mapa.
+ * 
+ * @returns {JSX.Element} - El componente de la pantalla de fotos.
+ */
 export default function PhotosScreen() {
   const navigation = useNavigation();
   const db = useSQLiteContext();
@@ -24,12 +30,16 @@ export default function PhotosScreen() {
   const [totalPages, setTotalPages] = useState(1);
   const theme = useTheme();
 
+  // Efecto que se ejecuta cada vez que la pantalla obtiene el foco
   useFocusEffect(
     useCallback(() => {
       loadPhotos();
     }, [db, sortOrder, filter, currentPage]),
   );
 
+  /**
+   * Carga las fotos desde la base de datos, aplicando los filtros y la paginación correspondientes.
+   */
   async function loadPhotos() {
     setIsLoading(true);
 
@@ -68,6 +78,10 @@ export default function PhotosScreen() {
     setIsLoading(false);
   }
 
+  /**
+   * Permite al usuario tomar una foto usando la cámara del dispositivo.
+   * La foto se guarda en la base de datos junto con la ubicación actual.
+   */
   async function takePhoto() {
     const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
     if (cameraStatus !== "granted") {
@@ -102,11 +116,20 @@ export default function PhotosScreen() {
     }
   }
 
+  /**
+   * Cambia el orden de clasificación de las fotos entre ascendente y descendente.
+   */
   function toggleSortOrder() {
     setSortOrder(sortOrder === "ASC" ? "DESC" : "ASC");
-    setCurrentPage(1); // Reset to first page when changing sort order
+    setCurrentPage(1); // Reinicia a la primera página al cambiar el orden
   }
 
+  /**
+   * Abre la ubicación de la foto en la aplicación de mapas del dispositivo.
+   * 
+   * @param {number} latitude - Latitud de la ubicación.
+   * @param {number} longitude - Longitud de la ubicación.
+   */
   function openInMaps(latitude: number, longitude: number) {
     const url =
       Platform.OS === "ios"
@@ -115,6 +138,11 @@ export default function PhotosScreen() {
     Linking.openURL(url);
   }
 
+  /**
+   * Elimina una foto de la base de datos.
+   * 
+   * @param {number} id - ID de la foto a eliminar.
+   */
   async function deletePhoto(id: number) {
     await deletePhotoAsync(db, id);
     loadPhotos();
@@ -122,6 +150,12 @@ export default function PhotosScreen() {
     setIsModalVisible(false);
   }
 
+  /**
+   * Renderiza un elemento de la lista de fotos.
+   * 
+   * @param {Object} item - El objeto de la foto a renderizar.
+   * @returns {JSX.Element} - El componente de la tarjeta de la foto.
+   */
   const renderPhotoItem = ({ item }: { item: PhotoEntity }) => (
     <Card
       style={styles(theme).card}
@@ -134,6 +168,15 @@ export default function PhotosScreen() {
     </Card>
   );
 
+  /**
+   * Componente de botón de filtro.
+   * 
+   * @param {Object} props - Propiedades del botón de filtro.
+   * @param {string} props.label - Etiqueta del botón.
+   * @param {boolean} props.active - Indica si el filtro está activo.
+   * @param {Function} props.onPress - Función que se ejecuta al presionar el botón.
+   * @returns {JSX.Element} - El componente del botón de filtro.
+   */
   const FilterButton = ({ label, active, onPress }) => (
     <Button
       appearance={active ? "filled" : "outline"}
@@ -146,6 +189,11 @@ export default function PhotosScreen() {
     </Button>
   );
 
+  /**
+   * Componente que contiene los botones de filtro.
+   * 
+   * @returns {JSX.Element} - El componente de los filtros.
+   */
   const Filters = () => (
     <Layout style={{ flexDirection: "row", marginBottom: 16 }}>
       <FilterButton label="Hoy" active={filter === "today"} onPress={() => setFilter("today")} />
@@ -251,6 +299,12 @@ export default function PhotosScreen() {
   );
 }
 
+/**
+ * Estilos del componente.
+ * 
+ * @param {Object} theme - Tema de la aplicación.
+ * @returns {Object} - Objeto de estilos.
+ */
 const styles = (theme) =>
   StyleSheet.create({
     safeArea: {
