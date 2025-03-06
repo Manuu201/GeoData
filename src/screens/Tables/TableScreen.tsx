@@ -1,5 +1,5 @@
-import React, { useState, useCallback, memo } from "react";
-import { FlatList, StyleSheet, Platform, KeyboardAvoidingView, View } from "react-native";
+import React, { useState, useCallback, memo, useContext } from "react";
+import { FlatList, StyleSheet, Platform, KeyboardAvoidingView, View, Alert } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -8,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card, Text, Input, Button, Icon, Layout, useTheme, Modal, Spinner, TopNavigation, TopNavigationAction, Divider } from "@ui-kitten/components";
 import type { RootStackParamList } from "../../navigation/types";
 import { Snackbar } from "react-native-paper";
+import { useTerrain } from "../../context/TerrainContext"; // Importar el contexto del terreno
 
 const ITEMS_PER_PAGE = 5;
 
@@ -45,6 +46,7 @@ const MemoizedTextInput = memo<MemoizedTextInputProps>(({ label, value, onChange
 export default function TableScreen() {
   const db = useSQLiteContext();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "TableEditorScreen">>();
+  const { terrainId } = useTerrain(); // Obtener el terreno seleccionado
   const [tables, setTables] = useState<TableEntity[]>([]);
   const [newTableName, setNewTableName] = useState("");
   const [newTableRows, setNewTableRows] = useState("");
@@ -64,15 +66,21 @@ export default function TableScreen() {
   // Efecto que se ejecuta cada vez que la pantalla obtiene el foco
   useFocusEffect(
     useCallback(() => {
-      fetchTables();
-    }, [])
+      if (terrainId) {
+        fetchTables();
+      } else {
+        setTables([]); // Limpiar las tablas si no hay terreno seleccionado
+      }
+    }, [terrainId])
   );
 
   /**
    * Obtiene las tablas desde la base de datos y las almacena en el estado.
    */
   async function fetchTables() {
-    const allTables = await fetchTablesAsync(db);
+    if (!terrainId) return; // No cargar tablas si no hay terreno seleccionado
+
+    const allTables = await fetchTablesAsync(db, terrainId);
     setTables(allTables);
     setPage(0);
   }
@@ -120,6 +128,11 @@ export default function TableScreen() {
    * Agrega una nueva tabla a la base de datos.
    */
   const handleAddTable = async () => {
+    if (!terrainId) {
+      Alert.alert("Error", "Debes seleccionar un terreno antes de crear una tabla.");
+      return;
+    }
+
     const rows = Number.parseInt(newTableRows, 10);
     const columns = Number.parseInt(newTableColumns, 10);
 
@@ -143,7 +156,7 @@ export default function TableScreen() {
     const template = selectedTemplate ? predefinedTemplates[selectedTemplate] : null;
     const data = template ? template.data : Array.from({ length: rows }, () => Array(columns).fill(""));
 
-    await addTableAsync(db, newTableName, rows, columns, data);
+    await addTableAsync(db, terrainId, newTableName, rows, columns, data);
     setNewTableName("");
     setNewTableRows("");
     setNewTableColumns("");
@@ -172,14 +185,13 @@ export default function TableScreen() {
    */
   const predefinedTemplates = {
     "Roca Sedimentaria": {
-      rows: 5,
-      columns: 5,
+      rows: 4,
+      columns: 7,
       data: [
-        ["Minerales", "Forma", "Tamaño", "Color", "Porcentaje"],
-        ["", "", "", "", ""],
-        ["", "", "", "", ""],
-        ["", "", "", "", ""],
-        ["", "", "", "", ""]
+        ["Clastos", "Color", "Forma","Tamaño","Esfericidad","Redondeamiento","Porcentaje"],
+        ["", "", "", "", "", "", ""],
+        ["", "", "", "", "", "", ""],
+        ["", "", "", "", "", "", ""],
       ]
     },
     "Roca Ígnea": {
@@ -189,6 +201,27 @@ export default function TableScreen() {
         ["", "Minerales", "Fósiles", "Cemento", "Matriz"],
         ["Tipo", "", "", "", ""],
         ["Porcentaje", "", "", "", ""]
+      ]
+    },
+    "Roca Piroclastica": {
+      rows: 4,
+      columns: 6,
+      data: [
+        ["Tipo Piroclastico", "Porcentaje", "Tamaño", "Forma", "Composicion", "Color"],
+        ["", "", "", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["", "", "", "", "", ""]
+      ]
+    },
+    "Roca Metamorfica": {
+      rows: 4,
+      columns: 6,
+      data: [
+        ["Minerales", "Forma", "Tamaño","Habito","Color","Porcentaje"],
+        ["", "", "", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["", "", "", "", "", ""],
       ]
     }
   };
@@ -315,6 +348,13 @@ export default function TableScreen() {
               <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Ígnea")}>
                 Usar Plantilla: Roca Ígnea
               </Button>
+              <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Piroclastica")}>
+                Usar Plantilla: Roca Piroclastica
+              </Button>
+              <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Metamorfica")}>
+                Usar Plantilla: Roca Metamorfica
+              </Button>
+
             </View>
 
             <MemoizedTextInput

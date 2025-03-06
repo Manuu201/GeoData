@@ -23,6 +23,7 @@ const RockTypes = {
       { subtype: 'Marga', image: require('../assets/images/sedimentary/Marga.png') },
       { subtype: 'Pedernal', image: require('../assets/images/sedimentary/Pedernal.png') },
       { subtype: 'Yeso', image: require('../assets/images/sedimentary/Yeso.png') },
+      { subtype: 'No hay', image: require('../assets/images/nohay.png') },
     ],
     metamorphic: [
       { subtype: 'Anfibolita', image: require('../assets/images/metamorphic/Anfibolita.png') },
@@ -35,6 +36,7 @@ const RockTypes = {
       { subtype: 'Pizarra', image: require('../assets/images/metamorphic/Pizarra.png') },
       { subtype: 'Skarn', image: require('../assets/images/metamorphic/Skarn.png') },
       { subtype: 'Zona Alteracion', image: require('../assets/images/metamorphic/Zona_Alteracion.png') },
+      { subtype: 'No hay', image: require('../assets/images/nohay.png') },
     ],
     igneous: [
       { subtype: 'Andesita', image: require('../assets/images/igneous/Andesita.png') },
@@ -48,6 +50,7 @@ const RockTypes = {
       { subtype: 'Lava Almohadilla', image: require('../assets/images/igneous/Lava_Almohadilla.png') },
       { subtype: 'Riolita', image: require('../assets/images/igneous/Riolita.png') },
       { subtype: 'Toba', image: require('../assets/images/igneous/Toba.png') },
+      { subtype: 'No hay', image: require('../assets/images/nohay.png') },
     ],
   };
 

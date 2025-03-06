@@ -4,6 +4,7 @@ import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
 import rockTypes from '../data/rockTypes';
 import StructureTypes from '../data/structuralTypes';
 import FossilTypes from '../data/fossilTypes';
+
 /**
  * Componente que representa una columna litológica con capas de roca, estructuras y fósiles.
  * Permite interactuar con las capas para editarlas, eliminarlas o moverlas.
@@ -13,26 +14,26 @@ import FossilTypes from '../data/fossilTypes';
  */
 const LithologyColumn = ({ layers, onDeleteLayer, onEditLayer, onMoveLayer }) => {
   const totalThickness = layers.reduce((sum, layer) => sum + layer.thickness, 0);
-  const scaleFactor = 15; // Factor de escala para convertir metros a píxeles
+  const scaleFactor = 10; // 1 metro = 10 píxeles (20m reales = 200 píxeles)
   const [selectedLayer, setSelectedLayer] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Svg height={totalThickness * scaleFactor + 50} width="100%">
         {/* Eje Y */}
         <Line
           x1="30" // Mover el eje Y más a la izquierda
-          y1="0"
+          y1={totalThickness * scaleFactor} // Invertir el eje Y
           x2="30"
-          y2={totalThickness * scaleFactor}
+          y2="0"
           stroke="#000"
           strokeWidth="2"
         />
 
         {/* Marcas y etiquetas del eje Y */}
         {layers.map((layer, index) => {
-          const y = layers.slice(0, index).reduce((sum, l) => sum + l.thickness, 0) * scaleFactor;
+          const y = totalThickness * scaleFactor - layers.slice(0, index + 1).reduce((sum, l) => sum + l.thickness, 0) * scaleFactor;
           return (
             <React.Fragment key={index}>
               <Line
@@ -50,7 +51,7 @@ const LithologyColumn = ({ layers, onDeleteLayer, onEditLayer, onMoveLayer }) =>
                 fontSize="10"
                 textAnchor="end"
               >
-                {`${y / scaleFactor}m`}
+                {`${layers.slice(0, index).reduce((sum, l) => sum + l.thickness, 0)}m`}
               </SvgText>
             </React.Fragment>
           );
@@ -68,7 +69,7 @@ const LithologyColumn = ({ layers, onDeleteLayer, onEditLayer, onMoveLayer }) =>
 
         {/* Capas de roca */}
         {layers.map((layer, index) => {
-          const y = layers.slice(0, index).reduce((sum, l) => sum + l.thickness, 0) * scaleFactor;
+          const y = totalThickness * scaleFactor - layers.slice(0, index + 1).reduce((sum, l) => sum + l.thickness, 0) * scaleFactor;
           const height = layer.thickness * scaleFactor;
 
           return (
@@ -237,7 +238,7 @@ const LithologyColumn = ({ layers, onDeleteLayer, onEditLayer, onMoveLayer }) =>
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -255,6 +256,9 @@ const getColorForType = (type) => {
 };
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     marginVertical: 16,
   },

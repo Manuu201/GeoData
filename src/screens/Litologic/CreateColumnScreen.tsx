@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
 import { Button, Layout, Text, Input } from '@ui-kitten/components';
 import { useSQLiteContext } from 'expo-sqlite';
 import { createColumnAsync } from '../../database/database';
+import { useTerrain } from '../../context/TerrainContext'; // Importar el contexto del terreno
 
 /**
  * Pantalla para crear una nueva columna litológica.
@@ -13,19 +14,25 @@ import { createColumnAsync } from '../../database/database';
  */
 const CreateColumnScreen = ({ navigation }: { navigation: any }) => {
   const db = useSQLiteContext(); // Obtener la instancia de la base de datos desde el contexto
+  const { terrainId } = useTerrain(); // Obtener el terreno seleccionado
   const [name, setName] = useState(''); // Estado para el nombre de la columna
 
   /**
    * Maneja la creación de una nueva columna.
    */
   const handleCreate = async () => {
+    if (!terrainId) {
+      Alert.alert("Error", "Debes seleccionar un terreno antes de crear una columna.");
+      return;
+    }
+
     if (!name) {
-      alert('El nombre es requerido'); // Validar que el nombre no esté vacío
+      Alert.alert("Error", "El nombre es requerido"); // Validar que el nombre no esté vacío
       return;
     }
 
     // Crear la columna en la base de datos
-    await createColumnAsync(db, name);
+    await createColumnAsync(db, terrainId, name); // Pasar terrainId
 
     // Navegar de regreso a la pantalla anterior y forzar la recarga
     navigation.pop();

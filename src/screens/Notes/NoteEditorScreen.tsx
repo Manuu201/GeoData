@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from "react-native";
 import { Layout, Text, Input, Button, Icon, Modal, Card, useTheme } from "@ui-kitten/components";
 import { useRoute, useNavigation, type RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -20,6 +20,7 @@ import InsertOptionsDialog from "../../components/InsertOptionsDialog";
 import ImageSelectionDialog from "../../components/ImageSelectionDialog";
 import TableSelectionDialog from "../../components/TableSelectionDialog";
 import React from "react";
+import { useTerrain } from "../../context/TerrainContext"; // Importar el contexto del terreno
 
 type RouteProps = RouteProp<RootStackParamList, "NoteEditorScreen">;
 type NavigationProp = StackNavigationProp<RootStackParamList, "NoteEditorScreen">;
@@ -35,6 +36,7 @@ export default function NoteEditorScreen() {
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
+  const { terrainId } = useTerrain(); // Obtener el terreno seleccionado
 
   const { note = { id: 0, title: "", content: "", photos: [], tables: [] } } = route.params || {};
   const [title, setTitle] = useState(note.title);
@@ -52,17 +54,25 @@ export default function NoteEditorScreen() {
    * Obtiene las tablas disponibles desde la base de datos.
    */
   const fetchTables = useCallback(async () => {
-    const tables = await fetchTablesAsync(db);
+    if (!terrainId) {
+      Alert.alert("Error", "Debes seleccionar un terreno antes de realizar esta acción.");
+      return;
+    }
+    const tables = await fetchTablesAsync(db, terrainId); // Pasar terrainId
     setAvailableTables(tables);
-  }, [db]);
+  }, [db, terrainId]);
 
   /**
    * Obtiene las fotos disponibles desde la base de datos.
    */
   const fetchPhotos = useCallback(async () => {
-    const photos = await fetchPhotosAsync(db);
+    if (!terrainId) {
+      Alert.alert("Error", "Debes seleccionar un terreno antes de realizar esta acción.");
+      return;
+    }
+    const photos = await fetchPhotosAsync(db, terrainId); // Pasar terrainId
     setAvailablePhotos(photos);
-  }, [db]);
+  }, [db, terrainId]);
 
   /**
    * Elimina una foto de la lista de fotos de la nota.
@@ -86,12 +96,17 @@ export default function NoteEditorScreen() {
    * Guarda la nota en la base de datos, ya sea como nueva o actualizando una existente.
    */
   async function handleSaveNote() {
+    if (!terrainId) {
+      Alert.alert("Error", "Debes seleccionar un terreno antes de guardar la nota.");
+      return;
+    }
+
     if (title.trim() === "" || content.trim() === "") return;
 
     if (note.id > 0) {
       await updateNoteAsync(db, note.id, title, content, photos, tables);
     } else {
-      await addNoteAsync(db, title, content, photos, tables);
+      await addNoteAsync(db, terrainId, title, content, photos, tables); // Pasar terrainId
     }
 
     setSnackbarVisible(true);

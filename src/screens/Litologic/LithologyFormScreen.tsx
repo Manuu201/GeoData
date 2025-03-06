@@ -15,36 +15,27 @@ const SearchIcon = (props) => <Icon {...props} name="search-outline" />;
 const ArrowBackIcon = (props) => <Icon {...props} name="arrow-back" />;
 const ArrowForwardIcon = (props) => <Icon {...props} name="arrow-forward" />;
 
-/**
- * Pantalla para crear o editar una columna litológica.
- * 
- * @param {Object} props - Propiedades del componente.
- * @param {Object} props.route - Objeto de ruta que contiene los parámetros.
- * @param {Object} props.navigation - Objeto de navegación.
- * @returns {JSX.Element} - El componente renderizado.
- */
 const LithologyFormScreen = ({ route, navigation }) => {
   const db = useSQLiteContext();
   const { columnId } = route.params;
-  const [type, setType] = useState<'sedimentary' | 'igneous' | 'metamorphic'>('sedimentary'); // Estado para el tipo de roca
-  const [subtype, setSubtype] = useState(''); // Estado para el subtipo de roca
-  const [thickness, setThickness] = useState(''); // Estado para el espesor de la capa
-  const [structure, setStructure] = useState(structureTypes[0].structure); // Estado para la estructura
-  const [fossil, setFossil] = useState(fossilTypes[0].fossil); // Estado para los fósiles
-  const [layers, setLayers] = useState<LithologyLayerEntity[]>([]); // Estado para las capas de la columna
-  const [showLegend, setShowLegend] = useState(false); // Estado para mostrar/ocultar la leyenda
-  const [editingLayer, setEditingLayer] = useState<LithologyLayerEntity | null>(null); // Estado para la capa en edición
-  const [currentStep, setCurrentStep] = useState(1); // Estado para el paso actual del formulario
-  const [showModal, setShowModal] = useState(false); // Estado para mostrar/ocultar el modal
-  const [searchQuerySubtype, setSearchQuerySubtype] = useState(''); // Estado para la búsqueda de subtipos
-  const [searchQueryStructure, setSearchQueryStructure] = useState(''); // Estado para la búsqueda de estructuras
-  const [searchQueryFossil, setSearchQueryFossil] = useState(''); // Estado para la búsqueda de fósiles
-  const [currentPageSubtype, setCurrentPageSubtype] = useState(0); // Estado para la página actual de subtipos
-  const [currentPageStructure, setCurrentPageStructure] = useState(0); // Estado para la página actual de estructuras
-  const [currentPageFossil, setCurrentPageFossil] = useState(0); // Estado para la página actual de fósiles
-  const itemsPerPage = 5; // Número de ítems por página
+  const [type, setType] = useState<'sedimentary' | 'igneous' | 'metamorphic'>('sedimentary');
+  const [subtype, setSubtype] = useState('');
+  const [thickness, setThickness] = useState('');
+  const [structure, setStructure] = useState(structureTypes[0].structure);
+  const [fossil, setFossil] = useState(fossilTypes[0].fossil);
+  const [layers, setLayers] = useState<LithologyLayerEntity[]>([]);
+  const [showLegend, setShowLegend] = useState(false);
+  const [editingLayer, setEditingLayer] = useState<LithologyLayerEntity | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [searchQuerySubtype, setSearchQuerySubtype] = useState('');
+  const [searchQueryStructure, setSearchQueryStructure] = useState('');
+  const [searchQueryFossil, setSearchQueryFossil] = useState('');
+  const [currentPageSubtype, setCurrentPageSubtype] = useState(0);
+  const [currentPageStructure, setCurrentPageStructure] = useState(0);
+  const [currentPageFossil, setCurrentPageFossil] = useState(0);
+  const itemsPerPage = 5;
 
-  // Efecto para cargar las capas al montar el componente
   useEffect(() => {
     const loadLayers = async () => {
       const layers = await fetchLayersAsync(db, columnId);
@@ -53,9 +44,6 @@ const LithologyFormScreen = ({ route, navigation }) => {
     loadLayers();
   }, [columnId]);
 
-  /**
-   * Maneja la adición o actualización de una capa.
-   */
   const handleAddLayer = async () => {
     if (!subtype || !thickness || !structure || !fossil) {
       alert('Todos los campos son requeridos');
@@ -63,10 +51,6 @@ const LithologyFormScreen = ({ route, navigation }) => {
     }
 
     const thicknessValue = parseFloat(thickness);
-    if (thicknessValue > 20) {
-      alert('El espesor debe ser de 20 metros o menos');
-      return;
-    }
 
     if (editingLayer) {
       await updateLayerAsync(db, editingLayer.id, type, subtype, thicknessValue, structure, fossil);
@@ -81,22 +65,12 @@ const LithologyFormScreen = ({ route, navigation }) => {
     setCurrentStep(1);
   };
 
-  /**
-   * Maneja la eliminación de una capa.
-   * 
-   * @param {number} id - ID de la capa a eliminar.
-   */
   const handleDeleteLayer = async (id: number) => {
     await deleteLayerAsync(db, id);
     const updatedLayers = await fetchLayersAsync(db, columnId);
     setLayers(updatedLayers);
   };
 
-  /**
-   * Maneja la edición de una capa.
-   * 
-   * @param {LithologyLayerEntity} layer - Capa a editar.
-   */
   const handleEditLayer = (layer: LithologyLayerEntity) => {
     setType(layer.type);
     setSubtype(layer.subtype);
@@ -107,12 +81,6 @@ const LithologyFormScreen = ({ route, navigation }) => {
     setShowModal(true);
   };
 
-  /**
-   * Maneja el movimiento de una capa (arriba o abajo).
-   * 
-   * @param {number} id - ID de la capa a mover.
-   * @param {'up' | 'down'} direction - Dirección del movimiento.
-   */
   const handleMoveLayer = async (id: number, direction: 'up' | 'down') => {
     const index = layers.findIndex(layer => layer.id === id);
     if (index === -1) return;
@@ -133,13 +101,6 @@ const LithologyFormScreen = ({ route, navigation }) => {
     setLayers(updatedLayers);
   };
 
-  /**
-   * Filtra los ítems según la consulta de búsqueda.
-   * 
-   * @param {Array} items - Lista de ítems a filtrar.
-   * @param {string} query - Consulta de búsqueda.
-   * @returns {Array} - Lista de ítems filtrados.
-   */
   const filterItems = (items, query) => {
     if (!items) return [];
     return items.filter(item => {
@@ -148,26 +109,11 @@ const LithologyFormScreen = ({ route, navigation }) => {
     });
   };
 
-  /**
-   * Obtiene los ítems paginados.
-   * 
-   * @param {Array} items - Lista de ítems.
-   * @param {number} currentPage - Página actual.
-   * @returns {Array} - Lista de ítems paginados.
-   */
   const getPaginatedItems = (items, currentPage) => {
     const startIndex = currentPage * itemsPerPage;
     return items.slice(startIndex, startIndex + itemsPerPage);
   };
 
-  /**
-   * Maneja el cambio de página.
-   * 
-   * @param {Function} setPage - Función para actualizar la página.
-   * @param {number} currentPage - Página actual.
-   * @param {number} totalPages - Total de páginas.
-   * @param {'prev' | 'next'} direction - Dirección del cambio de página.
-   */
   const handlePageChange = (setPage, currentPage, totalPages, direction) => {
     if (direction === 'next' && currentPage < totalPages - 1) {
       setPage(currentPage + 1);
@@ -176,9 +122,6 @@ const LithologyFormScreen = ({ route, navigation }) => {
     }
   };
 
-  /**
-   * Maneja el avance al siguiente paso del formulario.
-   */
   const handleNextStep = () => {
     if (currentStep === 1 && (!type || !subtype)) {
       alert('Debes seleccionar el tipo y subtipo de roca');
@@ -199,9 +142,6 @@ const LithologyFormScreen = ({ route, navigation }) => {
     setCurrentStep(currentStep + 1);
   };
 
-  /**
-   * Maneja el retroceso al paso anterior del formulario.
-   */
   const handlePreviousStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
@@ -214,11 +154,6 @@ const LithologyFormScreen = ({ route, navigation }) => {
     { label: 'Metamórfica', value: 'metamorphic' },
   ];
 
-  /**
-   * Renderiza el contenido del modal según el paso actual.
-   * 
-   * @returns {JSX.Element} - Contenido del modal.
-   */
   const renderModalContent = () => {
     switch (currentStep) {
       case 1:
@@ -469,6 +404,9 @@ const LithologyFormScreen = ({ route, navigation }) => {
       >
         <View style={styles.modalOverlay}>
           <Card style={styles.modal}>
+            <Button onPress={() => setShowModal(false)} style={styles.closeButton}>
+              Cerrar
+            </Button>
             {renderModalContent()}
           </Card>
         </View>

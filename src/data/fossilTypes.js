@@ -22,6 +22,7 @@ const FossilTypes = [
     { fossil: 'Nautiloideos', image: require('../assets/images/fossils/Nautiloideos.png') },
     { fossil: 'Radiolarios', image: require('../assets/images/fossils/Radiolarios.png') },
     { fossil: 'Trilobites', image: require('../assets/images/fossils/Trilobites.png') },
+    { subtype: 'No hay', image: require('../assets/images/nohay.png') },
   ];
   
   export default FossilTypes;

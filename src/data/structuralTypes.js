@@ -24,6 +24,7 @@ const StructureTypes = [
     { structure: 'Paraconcordancia', image: require('../assets/images/structures/Paraconcordancia.png') },
     { structure: 'Plegamiento', image: require('../assets/images/structures/Plegamiento.png') },
     { structure: 'Xenolitos', image: require('../assets/images/structures/Xenolitos.png') },
+    { subtype: 'No hay', image: require('../assets/images/nohay.png') },
   ];
   
   export default StructureTypes;

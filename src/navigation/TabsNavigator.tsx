@@ -103,7 +103,7 @@ const AppNavigator = () => (
             options={{ title: "Editar Informe" }}
           />
           <Stack.Screen name="StructuralDataScreen" component={StructuralDataScreen} options={{ title: "Ver Datos Estructurales" }} />
-          <Stack.Screen name="LithologyFormScreen" component={LithologyFormScreen} options={{ title: "Ver Columnas Litologica" }} />
+          <Stack.Screen name="LithologyFormScreen" component={LithologyFormScreen} options={{ title: "Ver Columnas Estratigráfica" }} />
           <Stack.Screen name="CreateColumnScreen" component={CreateColumnScreen} options={{ title: "Crear Columnas Litologicas" }} />
           <Stack.Screen name="TableScreen" component={TableScreen} options={{ title: "Ver Tablas" }} />
           <Stack.Screen name="PhotosScreen" component={PhotosScreen} options={{ title: "Ver Fotos" }} />

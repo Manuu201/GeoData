@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, Alert } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Layout, Button, useTheme, Select, SelectItem, IndexPath, Input } from "@ui-kitten/components";
@@ -12,6 +12,7 @@ import { addReportAsync, updateReportAsync, type ReportEntity } from "../../data
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../navigation/types";
 import ViewShot from "react-native-view-shot";
+import { useTerrain } from "../../context/TerrainContext"; // Importar el contexto del terreno
 
 type ReportsEditorScreenProps = NativeStackScreenProps<RootStackParamList, "ReportsEditorScreen">;
 
@@ -92,6 +93,7 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
   const [mineralData, setMineralData] = useState<{ Q: number; A: number; P: number } | null>(null);
   const viewShotRef = useRef<ViewShot>(null);
   const db = useSQLiteContext();
+  const { terrainId } = useTerrain(); // Obtener el terreno seleccionado
   const theme = useTheme();
 
   // Efecto para cargar los valores dinámicos y la tabla según el tipo de reporte
@@ -197,8 +199,14 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
    * Guarda el reporte en la base de datos.
    */
   const handleSaveReport = async () => {
+    if (!terrainId) {
+      Alert.alert("Error", "Debes seleccionar un terreno antes de guardar un reporte.");
+      return;
+    }
+
     const now = new Date().toISOString();
     const newReport: Omit<ReportEntity, "id" | "createdAt" | "updatedAt"> = {
+      terrainId, // Asociar el reporte al terreno seleccionado
       type: type as "sedimentary" | "igneous" | "free",
       title,
       photoUri,

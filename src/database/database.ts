@@ -1,30 +1,41 @@
 import { SQLiteDatabase } from 'expo-sqlite';
 
+// Nueva entidad para Terrenos
+export interface TerrainEntity {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
+// Modificar las entidades existentes para incluir terrainId
 export interface NoteEntity {
   id: number;
+  terrainId: number; // Nueva columna para asociar la nota a un terreno
   title: string;
   content: string;
   photos: string; // JSON string
   tables: string; // JSON string
-  createdAt: string; // Nuevo campo para la fecha de creación
+  createdAt: string;
 }
 
 export interface PhotoEntity {
   id: number;
+  terrainId: number; // Nueva columna para asociar la foto a un terreno
   uri: string;
   latitude: number;
   longitude: number;
-  created_at: string; // Nuevo campo de fecha
+  created_at: string;
 }
 
 export interface TableEntity {
   id: number;
+  terrainId: number; // Nueva columna para asociar la tabla a un terreno
   name: string;
   rows: number;
   columns: number;
-  data: string[][]; 
-  created_at: string; // Nuevo campo de fecha
+  data: string[][];
+  created_at: string;
 }
 
 export interface NoteAttachmentEntity {
@@ -33,22 +44,25 @@ export interface NoteAttachmentEntity {
   type: 'photo' | 'table';
   attachment_id: number;
 }
+
 export interface ReportEntity {
   id: number;
-  type: 'sedimentary' | 'igneous' | 'metamorphic' | 'free'; // Tipo de roca
-  title: string; // Título del reporte
-  photoUri?: string; // URI de la foto
-  latitude?: number; // Latitud de la foto
-  longitude?: number; // Longitud de la foto
-  text1?: string; // Texto dinámico 1 (depende del tipo de roca)
-  text2?: string; // Texto dinámico 2 (depende del tipo de roca)
-  tableData?: string; // Datos de la tabla en formato JSON
-  createdAt: string; // Fecha de creación
-  updatedAt: string; // Fecha de actualización
+  terrainId: number; // Nueva columna para asociar el reporte a un terreno
+  type: 'sedimentary' | 'igneous' | 'metamorphic' | 'free';
+  title: string;
+  photoUri?: string;
+  latitude?: number;
+  longitude?: number;
+  text1?: string;
+  text2?: string;
+  tableData?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface LithologyColumnEntity {
   id: number;
+  terrainId: number; // Nueva columna para asociar la columna litológica a un terreno
   name: string;
   createdAt: string;
   updatedAt: string;
@@ -64,15 +78,41 @@ export interface LithologyLayerEntity {
   fossils: string;
   createdAt: string;
   updatedAt: string;
-  order: number; // Asegúrate de que este campo esté definido
+  order: number;
 }
 
+// CRUD de Terrenos
+export async function addTerrainAsync(db: SQLiteDatabase, name: string): Promise<number> {
+  const createdAt = new Date().toISOString();
+  const updatedAt = createdAt;
 
-/**
- * CRUD de Notas
- */
+  const result = await db.runAsync(
+    'INSERT INTO terrains (name, createdAt, updatedAt) VALUES (?, ?, ?);',
+    name, createdAt, updatedAt
+  );
+  return result.lastInsertRowId;
+}
+
+export async function fetchTerrainsAsync(db: SQLiteDatabase): Promise<TerrainEntity[]> {
+  return await db.getAllAsync<TerrainEntity>('SELECT * FROM terrains;');
+}
+
+export async function updateTerrainAsync(db: SQLiteDatabase, id: number, name: string): Promise<void> {
+  const updatedAt = new Date().toISOString();
+  await db.runAsync(
+    'UPDATE terrains SET name = ?, updatedAt = ? WHERE id = ?;',
+    name, updatedAt, id
+  );
+}
+
+export async function deleteTerrainAsync(db: SQLiteDatabase, id: number): Promise<void> {
+  await db.runAsync('DELETE FROM terrains WHERE id = ?;', id);
+}
+
+// Modificar las funciones CRUD existentes para incluir terrainId
 export async function addNoteAsync(
   db: SQLiteDatabase,
+  terrainId: number,
   title: string,
   content: string,
   photos: PhotoEntity[] = [],
@@ -81,27 +121,23 @@ export async function addNoteAsync(
   if (title !== "" && content !== "") {
     const photosJson = JSON.stringify(photos);
     const tablesJson = JSON.stringify(tables);
-    const createdAt = new Date().toISOString(); // Fecha actual en formato ISO
+    const createdAt = new Date().toISOString();
     await db.runAsync(
-      "INSERT INTO notes (title, content, photos, tables, createdAt) VALUES (?, ?, ?, ?, ?);",
-      title,
-      content,
-      photosJson,
-      tablesJson,
-      createdAt
+      "INSERT INTO notes (terrainId, title, content, photos, tables, createdAt) VALUES (?, ?, ?, ?, ?, ?);",
+      terrainId, title, content, photosJson, tablesJson, createdAt
     );
   }
 }
-export async function fetchNotesAsync(db: SQLiteDatabase): Promise<NoteEntity[]> {
-  const notes = await db.getAllAsync<NoteEntity>("SELECT * FROM notes;");
+
+export async function fetchNotesAsync(db: SQLiteDatabase, terrainId: number): Promise<NoteEntity[]> {
+  const notes = await db.getAllAsync<NoteEntity>("SELECT * FROM notes WHERE terrainId = ?;", terrainId);
   return notes.map((note) => ({
     ...note,
     photos: note.photos ? JSON.parse(note.photos) : [],
     tables: note.tables ? JSON.parse(note.tables) : [],
-    createdAt: note.createdAt || new Date().toISOString(), // Si no existe, se asigna la fecha actual
+    createdAt: note.createdAt || new Date().toISOString(),
   }));
 }
-
 
 export async function updateNoteAsync(
   db: SQLiteDatabase,
@@ -115,81 +151,64 @@ export async function updateNoteAsync(
   const tablesJson = JSON.stringify(tables);
   await db.runAsync(
     "UPDATE notes SET title = ?, content = ?, photos = ?, tables = ? WHERE id = ?;",
-    title,
-    content,
-    photosJson,
-    tablesJson,
-    id
+    title, content, photosJson, tablesJson, id
   );
 }
 
 export async function deleteNoteAsync(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync("DELETE FROM notes WHERE id = ?;", id);
 }
-/**
- * CRUD de Fotos
- */
 
-export async function addPhotoAsync(db: SQLiteDatabase, uri: string, latitude: number, longitude: number): Promise<void> {
+export async function addPhotoAsync(
+  db: SQLiteDatabase,
+  terrainId: number,
+  uri: string,
+  latitude: number,
+  longitude: number
+): Promise<void> {
   const createdAt = new Date().toISOString();
-  await db.runAsync('INSERT INTO photos (uri, latitude, longitude, created_at) VALUES (?, ?, ?, ?);', uri, latitude, longitude, createdAt);
+  await db.runAsync(
+    'INSERT INTO photos (terrainId, uri, latitude, longitude, created_at) VALUES (?, ?, ?, ?, ?);',
+    terrainId, uri, latitude, longitude, createdAt
+  );
 }
 
-export async function fetchPhotosAsync(db: SQLiteDatabase): Promise<PhotoEntity[]> {
-  return await db.getAllAsync<PhotoEntity>('SELECT * FROM photos;');
+export async function fetchPhotosAsync(db: SQLiteDatabase, terrainId: number): Promise<PhotoEntity[]> {
+  return await db.getAllAsync<PhotoEntity>('SELECT * FROM photos WHERE terrainId = ?;', terrainId);
 }
 
 export async function deletePhotoAsync(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM photos WHERE id = ?;', id);
 }
-export async function fetchPhotosByDateAsync(db: SQLiteDatabase, filter: 'day' | 'month' | 'year'): Promise<PhotoEntity[]> {
-  let query = 'SELECT * FROM photos WHERE 1=1';
 
-  if (filter === 'day') {
-    query += ' AND DATE(created_at) = DATE("now")';
-  } else if (filter === 'month') {
-    query += ' AND strftime("%Y-%m", created_at) = strftime("%Y-%m", "now")';
-  } else if (filter === 'year') {
-    query += ' AND strftime("%Y", created_at) = strftime("%Y", "now")';
-  }
-
-  return await db.getAllAsync<PhotoEntity>(query);
-}
-
-
-
-/** 
- * CRUD de Tablas
- */
 export async function addTableAsync(
-  db: SQLiteDatabase, 
-  name: string, 
-  rows: number, 
-  columns: number, 
+  db: SQLiteDatabase,
+  terrainId: number,
+  name: string,
+  rows: number,
+  columns: number,
   data?: string[][]
 ): Promise<void> {
-  // Se crea una matriz vacía si no hay datos
   const validatedData = data || Array.from({ length: rows }, () => Array(columns).fill(""));
   const dataString = JSON.stringify(validatedData);
   const createdAt = new Date().toISOString();
 
   await db.runAsync(
-    'INSERT INTO tables (name, rows, columns, data, created_at) VALUES (?, ?, ?, ?, ?);',
-    name, rows, columns, dataString, createdAt
+    'INSERT INTO tables (terrainId, name, rows, columns, data, created_at) VALUES (?, ?, ?, ?, ?, ?);',
+    terrainId, name, rows, columns, dataString, createdAt
   );
 }
 
-export async function fetchTablesAsync(db: SQLiteDatabase): Promise<TableEntity[]> {
+export async function fetchTablesAsync(db: SQLiteDatabase, terrainId: number): Promise<TableEntity[]> {
   const tables = await db.getAllAsync<{
     id: number;
+    terrainId: number; // Incluir terrainId en la consulta
     name: string;
     rows: number;
     columns: number;
     data: string;
     created_at: string;
-  }>('SELECT id, name, rows, columns, data, created_at FROM tables;');
-
-  console.log('📌 Tablas cargadas desde la base de datos:', tables);
+  }>('SELECT id, terrainId, name, rows, columns, data, created_at FROM tables WHERE terrainId = ?;', terrainId);
 
   return tables.map(table => {
     let parsedData: string[][] = Array.from({ length: table.rows }, () => Array(table.columns).fill(""));
@@ -197,7 +216,7 @@ export async function fetchTablesAsync(db: SQLiteDatabase): Promise<TableEntity[
     try {
       parsedData = table.data ? JSON.parse(table.data) as string[][] : parsedData;
     } catch (error) {
-      console.error("🚨 Error al parsear los datos de la tabla:", error);
+      console.error("Error al parsear los datos de la tabla:", error);
     }
 
     return {
@@ -215,9 +234,6 @@ export async function updateTableAsync(
   columns: number,
   data: string[][]
 ): Promise<void> {
-  console.log(`Actualizando tabla ID ${id} con datos:`, { name, rows, columns, data });
-
-  // Asegurar que los datos coincidan con la nueva estructura de filas y columnas
   let normalizedData = Array.from({ length: rows }, (_, rowIndex) =>
     Array.from({ length: columns }, (_, colIndex) => data[rowIndex]?.[colIndex] ?? "")
   );
@@ -228,159 +244,86 @@ export async function updateTableAsync(
     'UPDATE tables SET name = ?, rows = ?, columns = ?, data = ? WHERE id = ?;',
     name, rows, columns, dataString, id
   );
-
-  console.log('✅ Tabla actualizada correctamente en la base de datos.');
 }
 
 export async function deleteTableAsync(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM tables WHERE id = ?;', id);
 }
 
-export async function addNoteAttachmentAsync(
-  db: SQLiteDatabase,
-  noteId: number,
-  type: 'photo' | 'table',
-  attachmentId: number
-): Promise<void> {
-  await db.runAsync(
-    'INSERT INTO note_attachments (note_id, type, attachment_id) VALUES (?, ?, ?);',
-    noteId,
-    type,
-    attachmentId
-  );
-}
-/**
- * Obtiene los adjuntos de una nota específica.
- */
-export async function fetchNoteAttachmentsAsync(db: SQLiteDatabase, noteId: number): Promise<NoteAttachmentEntity[]> {
-  return await db.getAllAsync<NoteAttachmentEntity>('SELECT * FROM note_attachments WHERE note_id = ?;', noteId);
-}
-
-/**
- * Elimina un adjunto específico de una nota.
- */
-export async function deleteNoteAttachmentAsync(db: SQLiteDatabase, id: number): Promise<void> {
-  await db.runAsync('DELETE FROM note_attachments WHERE id = ?;', id);
-}
-
-
-
-// Agregar un nuevo reporte
-export async function addReportAsync(db: SQLiteDatabase, report: Omit<ReportEntity, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
+export async function addReportAsync(db: SQLiteDatabase, report: Omit<ReportEntity, "id" | "createdAt" | "updatedAt">): Promise<void> {
   const createdAt = new Date().toISOString();
   const updatedAt = createdAt;
 
-  try {
-    await db.runAsync(
-      `INSERT INTO reports (
-        type, title, photoUri, latitude, longitude, text1, text2, tableData, createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-      [
-        report.type,
-        report.title,
-        report.photoUri || null,
-        report.latitude || null,
-        report.longitude || null,
-        report.text1 || null,
-        report.text2 || null,
-        report.tableData || null,
-        createdAt,
-        updatedAt,
-      ]
-    );
-    console.log('Reporte agregado correctamente:', report);
-  } catch (error) {
-    console.error('Error al agregar el reporte:', error);
-    throw error; // Lanzar el error para manejarlo en el código que llama a esta función
-  }
+  await db.runAsync(
+    `INSERT INTO reports (
+      terrainId, type, title, photoUri, latitude, longitude, text1, text2, tableData, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+    [
+      report.terrainId,
+      report.type,
+      report.title,
+      report.photoUri || null,
+      report.latitude || null,
+      report.longitude || null,
+      report.text1 || null,
+      report.text2 || null,
+      report.tableData || null,
+      createdAt,
+      updatedAt,
+    ]
+  );
 }
 
-// Recuperar todos los reportes
-export async function fetchReportsAsync(db: SQLiteDatabase): Promise<ReportEntity[]> {
-  try {
-    const reports = await db.getAllAsync<ReportEntity>('SELECT * FROM reports;');
-    console.log('Reportes recuperados:', reports);
-    return reports;
-  } catch (error) {
-    console.error('Error al recuperar los reportes:', error);
-    throw error; // Lanzar el error para manejarlo en el código que llama a esta función
-  }
-}
-
-// Recuperar un reporte por su ID
-export async function fetchReportByIdAsync(db: SQLiteDatabase, id: number): Promise<ReportEntity | null> {
-  try {
-    const report = await db.getFirstAsync<ReportEntity>('SELECT * FROM reports WHERE id = ?;', [id]);
-    console.log('Reporte recuperado por ID:', report);
-    return report || null;
-  } catch (error) {
-    console.error('Error al recuperar el reporte por ID:', error);
-    throw error; // Lanzar el error para manejarlo en el código que llama a esta función
-  }
-}
-
-// Actualizar un reporte
 export async function updateReportAsync(db: SQLiteDatabase, report: ReportEntity): Promise<void> {
   const updatedAt = new Date().toISOString();
 
-  try {
-    await db.runAsync(
-      `UPDATE reports SET
-        type = ?, title = ?, photoUri = ?, latitude = ?, longitude = ?, text1 = ?, text2 = ?, tableData = ?, updatedAt = ?
-      WHERE id = ?;`,
-      [
-        report.type,
-        report.title,
-        report.photoUri || null,
-        report.latitude || null,
-        report.longitude || null,
-        report.text1 || null,
-        report.text2 || null,
-        report.tableData || null,
-        updatedAt,
-        report.id,
-      ]
-    );
-    console.log('Reporte actualizado correctamente');
-  } catch (error) {
-    console.error('Error al actualizar el reporte:', error);
-    throw error; // Lanzar el error para manejarlo en el código que llama a esta función
-  }
+  await db.runAsync(
+    `UPDATE reports SET
+      terrainId = ?, type = ?, title = ?, photoUri = ?, latitude = ?, longitude = ?, text1 = ?, text2 = ?, tableData = ?, updatedAt = ?
+    WHERE id = ?;`,
+    [
+      report.terrainId,
+      report.type,
+      report.title,
+      report.photoUri || null,
+      report.latitude || null,
+      report.longitude || null,
+      report.text1 || null,
+      report.text2 || null,
+      report.tableData || null,
+      updatedAt,
+      report.id,
+    ]
+  );
 }
 
-// Eliminar un reporte
+export async function fetchReportsAsync(db: SQLiteDatabase, terrainId: number): Promise<ReportEntity[]> {
+  return await db.getAllAsync<ReportEntity>('SELECT * FROM reports WHERE terrainId = ?;', terrainId);
+}
+
 export async function deleteReportAsync(db: SQLiteDatabase, id: number): Promise<void> {
-  try {
-    await db.runAsync('DELETE FROM reports WHERE id = ?;', [id]);
-    console.log('Reporte eliminado correctamente');
-  } catch (error) {
-    console.error('Error al eliminar el reporte:', error);
-    throw error; // Lanzar el error para manejarlo en el código que llama a esta función
-  }
+  await db.runAsync('DELETE FROM reports WHERE id = ?;', id);
 }
 
-// CRUD de Litologías
-
-// Crear una nueva columna litográfica
-export async function createColumnAsync(db: SQLiteDatabase, name: string): Promise<number> {
+export async function createColumnAsync(
+  db: SQLiteDatabase,
+  terrainId: number,
+  name: string
+): Promise<number> {
   const createdAt = new Date().toISOString();
   const updatedAt = createdAt;
 
-  console.log(`Creando columna litográfica: ${name}`); // Log para depuración
-
-  try {
-    const result = await db.runAsync(
-      'INSERT INTO columns (name, createdAt, updatedAt) VALUES (?, ?, ?);',
-      name, createdAt, updatedAt
-    );
-    console.log(`Columna creada con ID: ${result.lastInsertRowId}`); // Log para depuración
-    return result.lastInsertRowId;
-  } catch (error) {
-    console.error('Error al crear la columna:', error); // Log para depuración
-    throw error;
-  }
+  const result = await db.runAsync(
+    'INSERT INTO columns (terrainId, name, createdAt, updatedAt) VALUES (?, ?, ?, ?);',
+    terrainId, name, createdAt, updatedAt
+  );
+  return result.lastInsertRowId;
 }
-// Actualizar una columna litográfica
+
+export async function fetchColumnsAsync(db: SQLiteDatabase, terrainId: number): Promise<LithologyColumnEntity[]> {
+  return await db.getAllAsync<LithologyColumnEntity>('SELECT * FROM columns WHERE terrainId = ?;', terrainId);
+}
+
 export async function addLayerAsync(
   db: SQLiteDatabase,
   columnId: number,
@@ -393,60 +336,25 @@ export async function addLayerAsync(
   const createdAt = new Date().toISOString();
   const updatedAt = createdAt;
 
-  // Obtener el máximo valor de `order` para la columna
   const maxOrderResult = await db.getFirstAsync<{ maxOrder: number }>(
     'SELECT MAX(`order`) as maxOrder FROM layers WHERE columnId = ?;',
     columnId
   );
   const order = (maxOrderResult?.maxOrder || 0) + 1;
 
-  console.log(`Agregando capa a la columna ${columnId}:`, { type, subtype, thickness, structure, fossils, order });
-
-  try {
-    await db.runAsync(
-      'INSERT INTO layers (columnId, type, subtype, thickness, structure, fossils, createdAt, updatedAt, `order`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);',
-      columnId, type, subtype, thickness, structure, fossils, createdAt, updatedAt, order
-    );
-    console.log('Capa agregada correctamente');
-  } catch (error) {
-    console.error('Error al agregar la capa:', error);
-    throw error;
-  }
+  await db.runAsync(
+    'INSERT INTO layers (columnId, type, subtype, thickness, structure, fossils, createdAt, updatedAt, `order`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);',
+    columnId, type, subtype, thickness, structure, fossils, createdAt, updatedAt, order
+  );
 }
 
-// Recuperar todas las columnas litográficas
-export async function fetchColumnsAsync(db: SQLiteDatabase): Promise<LithologyColumnEntity[]> {
-  console.log('Recuperando todas las columnas litográficas'); // Log para depuración
-
-  try {
-    const columns = await db.getAllAsync<LithologyColumnEntity>('SELECT * FROM columns;');
-    console.log('Columnas recuperadas:', columns); // Log para depuración
-    return columns;
-  } catch (error) {
-    console.error('Error al recuperar las columnas:', error); // Log para depuración
-    return [];
-  }
-}
-
-// Recuperar una columna litográfica por su ID
 export async function fetchLayersAsync(db: SQLiteDatabase, columnId: number): Promise<LithologyLayerEntity[]> {
-  console.log(`Recuperando capas para la columna ${columnId}`);
-
-  try {
-    const layers = await db.getAllAsync<LithologyLayerEntity>(
-      'SELECT * FROM layers WHERE columnId = ? ORDER BY `order` ASC;',
-      columnId
-    );
-    console.log('Capas recuperadas:', layers);
-    return layers;
-  } catch (error) {
-    console.error('Error al recuperar las capas:', error);
-    return [];
-  }
+  return await db.getAllAsync<LithologyLayerEntity>(
+    'SELECT * FROM layers WHERE columnId = ? ORDER BY `order` ASC;',
+    columnId
+  );
 }
 
-
-// Actualizar el orden de las capas
 export async function updateLayerOrderAsync(
   db: SQLiteDatabase,
   id: number,
@@ -454,21 +362,12 @@ export async function updateLayerOrderAsync(
 ): Promise<void> {
   const updatedAt = new Date().toISOString();
 
-  console.log(`Actualizando orden de la capa con ID: ${id} a ${order}`);
-
-  try {
-    await db.runAsync(
-      'UPDATE layers SET `order` = ?, updatedAt = ? WHERE id = ?;',
-      order, updatedAt, id
-    );
-    console.log('Orden de la capa actualizado correctamente');
-  } catch (error) {
-    console.error('Error al actualizar el orden de la capa:', error);
-    throw error;
-  }
+  await db.runAsync(
+    'UPDATE layers SET `order` = ?, updatedAt = ? WHERE id = ?;',
+    order, updatedAt, id
+  );
 }
 
-// Actualizar una capa litográfica
 export async function updateLayerAsync(
   db: SQLiteDatabase,
   id: number,
@@ -480,51 +379,26 @@ export async function updateLayerAsync(
 ): Promise<void> {
   const updatedAt = new Date().toISOString();
 
-  console.log(`Actualizando capa con ID: ${id}`); // Log para depuración
-
-  try {
-    await db.runAsync(
-      'UPDATE layers SET type = ?, subtype = ?, thickness = ?, structure = ?, fossils = ?, updatedAt = ? WHERE id = ?;',
-      type, subtype, thickness, structure, fossils, updatedAt, id
-    );
-    console.log('Capa actualizada correctamente'); // Log para depuración
-  } catch (error) {
-    console.error('Error al actualizar la capa:', error); // Log para depuración
-    throw error;
-  }
+  await db.runAsync(
+    'UPDATE layers SET type = ?, subtype = ?, thickness = ?, structure = ?, fossils = ?, updatedAt = ? WHERE id = ?;',
+    type, subtype, thickness, structure, fossils, updatedAt, id
+  );
 }
 
 export async function deleteLayerAsync(db: SQLiteDatabase, id: number): Promise<void> {
-  console.log(`Eliminando capa con ID: ${id}`); // Log para depuración
-
-  try {
-    await db.runAsync('DELETE FROM layers WHERE id = ?;', id);
-    console.log('Capa eliminada correctamente'); // Log para depuración
-  } catch (error) {
-    console.error('Error al eliminar la capa:', error); // Log para depuración
-    throw error;
-  }
+  await db.runAsync('DELETE FROM layers WHERE id = ?;', id);
 }
 
-// Eliminar una columna litográfica
 export async function deleteColumnAsync(db: SQLiteDatabase, id: number): Promise<void> {
-  console.log(`Eliminando columna con ID: ${id}`); // Log para depuración
-
-  try {
-    await db.runAsync('DELETE FROM columns WHERE id = ?;', id);
-    await db.runAsync('DELETE FROM layers WHERE columnId = ?;', id);
-    console.log('Columna y capas asociadas eliminadas correctamente'); // Log para depuración
-  } catch (error) {
-    console.error('Error al eliminar la columna:', error); // Log para depuración
-    throw error;
-  }
+  await db.runAsync('DELETE FROM columns WHERE id = ?;', id);
+  await db.runAsync('DELETE FROM layers WHERE columnId = ?;', id);
 }
 
- /**
+/**
  * Migración de la base de datos.
  */
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  const DATABASE_VERSION = 6; // Nueva versión incrementada
+  const DATABASE_VERSION = 7; // Nueva versión incrementada
   let { user_version: currentDbVersion } = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
 
   if (currentDbVersion >= DATABASE_VERSION) {
@@ -535,34 +409,48 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
 
   if (currentDbVersion === 0) {
     await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS terrains (
+        id INTEGER PRIMARY KEY NOT NULL,
+        name TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS notes (
         id INTEGER PRIMARY KEY NOT NULL,
+        terrainId INTEGER NOT NULL,
         title TEXT,
         content TEXT,
         photos TEXT DEFAULT '[]',
         tables TEXT DEFAULT '[]',
-        createdAt TEXT NOT NULL
+        createdAt TEXT NOT NULL,
+        FOREIGN KEY (terrainId) REFERENCES terrains (id) ON DELETE CASCADE
       );
 
       CREATE TABLE IF NOT EXISTS photos (
         id INTEGER PRIMARY KEY NOT NULL,
+        terrainId INTEGER NOT NULL,
         uri TEXT,
         latitude REAL,
         longitude REAL,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (terrainId) REFERENCES terrains (id) ON DELETE CASCADE
       );
 
       CREATE TABLE IF NOT EXISTS tables (
         id INTEGER PRIMARY KEY NOT NULL,
+        terrainId INTEGER NOT NULL,
         name TEXT,
         rows INT,
         columns INT,
         data TEXT DEFAULT '[]',
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (terrainId) REFERENCES terrains (id) ON DELETE CASCADE
       );
 
       CREATE TABLE IF NOT EXISTS reports (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        terrainId INTEGER NOT NULL,
         type TEXT NOT NULL,
         title TEXT NOT NULL,
         photoUri TEXT,
@@ -572,27 +460,19 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
         text2 TEXT,
         tableData TEXT,
         createdAt TEXT NOT NULL,
-        updatedAt TEXT NOT NULL
+        updatedAt TEXT NOT NULL,
+        FOREIGN KEY (terrainId) REFERENCES terrains (id) ON DELETE CASCADE
       );
-      CREATE TABLE IF NOT EXISTS lithologies (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT NOT NULL,
-        subtype TEXT NOT NULL,
-        thickness REAL NOT NULL,
-        structure TEXT,
-        fossils TEXT,
-        imageUri TEXT,
-        notes TEXT,
-        geologicalEvent TEXT,
-        createdAt TEXT NOT NULL,
-        updatedAt TEXT NOT NULL
-      );
+
       CREATE TABLE IF NOT EXISTS columns (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        terrainId INTEGER NOT NULL,
         name TEXT NOT NULL,
         createdAt TEXT NOT NULL,
-        updatedAt TEXT NOT NULL
+        updatedAt TEXT NOT NULL,
+        FOREIGN KEY (terrainId) REFERENCES terrains (id) ON DELETE CASCADE
       );
+
       CREATE TABLE IF NOT EXISTS layers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         columnId INTEGER NOT NULL,
@@ -603,22 +483,11 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
         fossils TEXT,
         createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL,
-        \`order\` INTEGER, 
+        \`order\` INTEGER,
         FOREIGN KEY (columnId) REFERENCES columns (id) ON DELETE CASCADE
       );
     `);
-    currentDbVersion = 6;
-  }
-
-  if (currentDbVersion === 5) {
-    await db.execAsync(`
-      ALTER TABLE notes ADD COLUMN photos TEXT;
-      ALTER TABLE notes ADD COLUMN tables TEXT;
-      ALTER TABLE notes ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP;
-      ALTER TABLE photos ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP;
-      ALTER TABLE tables ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP;
-    `);
-    currentDbVersion = 6;
+    currentDbVersion = 7;
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION};`);

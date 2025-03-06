@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { FlatList, View, StyleSheet } from "react-native";
+import React, { useState, useCallback, useEffect, useContext } from "react";
+import { FlatList, View, StyleSheet, Alert } from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { fetchReportsAsync, deleteReportAsync, type ReportEntity } from "../../database/database";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -21,6 +21,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInRight, FadeOutLeft, Layout as LayoutAnimation } from "react-native-reanimated";
 import { Snackbar } from "react-native-paper";
+import { useTerrain } from "../../context/TerrainContext"; // Importar el contexto del terreno
 
 type ReportsScreenProps = NativeStackScreenProps<RootStackParamList, "ReportsScreen">;
 
@@ -41,18 +42,21 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const db = useSQLiteContext();
+  const { terrainId } = useTerrain(); // Obtener el terreno seleccionado
   const theme = useTheme();
 
   /**
    * Carga los reportes desde la base de datos.
    */
   const loadReports = useCallback(async () => {
-    const fetchedReports = await fetchReportsAsync(db);
+    if (!terrainId) return; // No cargar reportes si no hay terreno seleccionado
+
+    const fetchedReports = await fetchReportsAsync(db, terrainId);
     if (sortByDate) {
       fetchedReports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     setReports(fetchedReports);
-  }, [db, sortByDate]);
+  }, [db, sortByDate, terrainId]);
 
   // Recargar reportes cuando la pantalla está enfocada
   useFocusEffect(
@@ -243,7 +247,16 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
         title="Reportes"
         alignment="center"
         accessoryRight={() => (
-          <TopNavigationAction icon={AddIcon} onPress={() => navigation.navigate("ReportsEditorScreen")} />
+          <TopNavigationAction
+            icon={AddIcon}
+            onPress={() => {
+              if (!terrainId) {
+                Alert.alert("Error", "Debes seleccionar un terreno antes de crear un reporte.");
+                return;
+              }
+              navigation.navigate("ReportsEditorScreen");
+            }}
+          />
         )}
       />
       <Divider />

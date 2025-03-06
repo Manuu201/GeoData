@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { FlatList, StyleSheet, Image, Platform, Linking } from "react-native";
+import React, { useState, useCallback, useContext } from "react";
+import { FlatList, StyleSheet, Image, Platform, Linking, Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useSQLiteContext } from "expo-sqlite";
@@ -7,19 +7,14 @@ import { addPhotoAsync, deletePhotoAsync, type PhotoEntity } from "../../databas
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Layout, Button, Card, Icon, Text, Modal, Spinner, TopNavigation, Divider, useTheme } from "@ui-kitten/components";
 import { SafeAreaView } from "react-native-safe-area-context";
-import React from "react";
+import { useTerrain } from "../../context/TerrainContext"; // Importar el contexto del terreno
 
 const ITEMS_PER_PAGE = 5;
 
-/**
- * Componente que muestra una lista de fotos geológicas con funcionalidades de filtrado, ordenación y paginación.
- * Permite al usuario tomar nuevas fotos, ver detalles de las fotos, eliminarlas y ver su ubicación en un mapa.
- * 
- * @returns {JSX.Element} - El componente de la pantalla de fotos.
- */
 export default function PhotosScreen() {
   const navigation = useNavigation();
   const db = useSQLiteContext();
+  const { terrainId } = useTerrain(); // Obtener el terreno seleccionado
   const [photos, setPhotos] = useState<PhotoEntity[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<PhotoEntity | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -33,14 +28,20 @@ export default function PhotosScreen() {
   // Efecto que se ejecuta cada vez que la pantalla obtiene el foco
   useFocusEffect(
     useCallback(() => {
-      loadPhotos();
-    }, [db, sortOrder, filter, currentPage]),
+      if (terrainId) {
+        loadPhotos();
+      } else {
+        setPhotos([]); // Limpiar las fotos si no hay terreno seleccionado
+      }
+    }, [db, sortOrder, filter, currentPage, terrainId]),
   );
 
   /**
    * Carga las fotos desde la base de datos, aplicando los filtros y la paginación correspondientes.
    */
   async function loadPhotos() {
+    if (!terrainId) return; // No cargar fotos si no hay terreno seleccionado
+
     setIsLoading(true);
 
     const now = new Date();
@@ -49,9 +50,9 @@ export default function PhotosScreen() {
     startOfWeek.setDate(today.getDate() - today.getDay());
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const query = `SELECT * FROM photos ORDER BY created_at ${sortOrder} LIMIT ? OFFSET ?`;
+    const query = `SELECT * FROM photos WHERE terrainId = ? ORDER BY created_at ${sortOrder} LIMIT ? OFFSET ?`;
     const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-    const params = [ITEMS_PER_PAGE, offset];
+    const params = [terrainId, ITEMS_PER_PAGE, offset];
 
     const allPhotos = await db.getAllAsync<PhotoEntity>(query, params);
 
@@ -71,8 +72,8 @@ export default function PhotosScreen() {
 
     setPhotos(filteredPhotos);
 
-    const countQuery = "SELECT COUNT(*) as total FROM photos";
-    const totalCount = await db.getFirstAsync<{ total: number }>(countQuery);
+    const countQuery = "SELECT COUNT(*) as total FROM photos WHERE terrainId = ?";
+    const totalCount = await db.getFirstAsync<{ total: number }>(countQuery, [terrainId]);
     setTotalPages(Math.ceil(totalCount.total / ITEMS_PER_PAGE));
 
     setIsLoading(false);
@@ -83,6 +84,11 @@ export default function PhotosScreen() {
    * La foto se guarda en la base de datos junto con la ubicación actual.
    */
   async function takePhoto() {
+    if (!terrainId) {
+      Alert.alert("Error", "Debes seleccionar un terreno antes de tomar una foto.");
+      return;
+    }
+
     const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
     if (cameraStatus !== "granted") {
       alert("Se necesita permiso para usar la cámara");
@@ -108,7 +114,7 @@ export default function PhotosScreen() {
         const location = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = location.coords;
 
-        await addPhotoAsync(db, uri, latitude, longitude);
+        await addPhotoAsync(db, terrainId, uri, latitude, longitude); // Asegúrate de pasar terrainId
         loadPhotos();
       } catch (error) {
         alert("No se pudo obtener la ubicación");

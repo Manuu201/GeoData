@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { FlatList, StyleSheet, KeyboardAvoidingView, Platform, View, Animated } from "react-native";
+import { FlatList, StyleSheet, KeyboardAvoidingView, Platform, View, Animated, Alert } from "react-native";
 import { Layout, Text, Card, Button, Icon, useTheme, Input, TopNavigation, TopNavigationAction, Divider, Modal } from "@ui-kitten/components";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -9,6 +9,7 @@ import type { RootStackParamList } from "../../navigation/types";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Snackbar } from "react-native-paper";
 import * as Animatable from "react-native-animatable";
+import { useTerrain } from "../../context/TerrainContext"; // Importar el contexto del terreno
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "NotesScreen">;
 
@@ -21,6 +22,7 @@ type NavigationProp = StackNavigationProp<RootStackParamList, "NotesScreen">;
 export default function NotesScreen() {
   const db = useSQLiteContext();
   const navigation = useNavigation<NavigationProp>();
+  const { terrainId } = useTerrain(); // Obtener el terreno seleccionado
   const [notes, setNotes] = useState<NoteEntity[]>([]);
   const theme = useTheme();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
@@ -35,20 +37,26 @@ export default function NotesScreen() {
   // Efecto que se ejecuta cada vez que la pantalla obtiene el foco
   useFocusEffect(
     useCallback(() => {
-      fetchNotes();
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
-    }, [])
+      if (terrainId) {
+        fetchNotes();
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+      } else {
+        setNotes([]); // Limpiar las notas si no hay terreno seleccionado
+      }
+    }, [terrainId])
   );
 
   /**
    * Obtiene las notas desde la base de datos y las almacena en el estado.
    */
   async function fetchNotes() {
-    const fetchedNotes = await fetchNotesAsync(db);
+    if (!terrainId) return; // No cargar notas si no hay terreno seleccionado
+
+    const fetchedNotes = await fetchNotesAsync(db, terrainId); // Asegúrate de pasar terrainId
     if (sortByDate) {
       fetchedNotes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
@@ -72,6 +80,11 @@ export default function NotesScreen() {
    * @param {NoteEntity} [note] - La nota a editar (opcional).
    */
   function openNoteEditor(note?: NoteEntity) {
+    if (!terrainId) {
+      Alert.alert("Error", "Debes seleccionar un terreno antes de crear o editar una nota.");
+      return;
+    }
+
     if (!note) {
       showSnackbar("Nueva nota creada");
     }

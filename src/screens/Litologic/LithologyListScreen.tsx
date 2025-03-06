@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { FlatList, StyleSheet } from "react-native";
+import { FlatList, StyleSheet, Alert } from "react-native";
 import {
   Button,
   Layout,
@@ -21,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { RootStackParamList } from "../../navigation/types";
 import * as Animatable from "react-native-animatable";
 import { Snackbar } from "react-native-paper"; // Importamos Snackbar desde react-native-paper
+import { useTerrain } from "../../context/TerrainContext"; // Importar el contexto del terreno
 
 type LithologyListScreenNavigationProp = StackNavigationProp<RootStackParamList, "LithologyListScreen">;
 
@@ -33,6 +34,7 @@ const LithologyListScreen = () => {
   const navigation = useNavigation<LithologyListScreenNavigationProp>();
   const theme = useTheme();
   const db = useSQLiteContext();
+  const { terrainId } = useTerrain(); // Obtener el terreno seleccionado
 
   const [columns, setColumns] = useState<LithologyColumnEntity[]>([]); // Estado para almacenar las columnas
   const [searchQuery, setSearchQuery] = useState(""); // Estado para la consulta de búsqueda
@@ -47,12 +49,16 @@ const LithologyListScreen = () => {
    * Carga las columnas desde la base de datos.
    */
   const loadColumns = useCallback(async () => {
-    const fetchedColumns = await fetchColumnsAsync(db);
+    if (!terrainId) {
+      Alert.alert("Error", "Debes seleccionar un terreno antes de realizar esta acción.");
+      return;
+    }
+    const fetchedColumns = await fetchColumnsAsync(db, terrainId); // Pasar terrainId
     if (sortByDate) {
       fetchedColumns.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); // Ordenar por fecha si es necesario
     }
     setColumns(fetchedColumns); // Actualizar el estado con las columnas obtenidas
-  }, [db, sortByDate]);
+  }, [db, sortByDate, terrainId]);
 
   // Recargar columnas cuando la pantalla está enfocada
   useFocusEffect(
@@ -226,7 +232,7 @@ const LithologyListScreen = () => {
   return (
     <SafeAreaView style={styles(theme).safeArea}>
       <TopNavigation
-        title="Columnas Litológicas"
+        title="Columnas Estratigráficas"
         alignment="center"
         accessoryRight={() => (
           <TopNavigationAction icon={AddIcon} onPress={() => navigation.navigate("CreateColumnScreen")} />
