@@ -44,9 +44,11 @@ const ReportForm = ({
   }, [type]);
 
   const items = [
-    { label: "Roca Sedimentaria", value: "sedimentary" },
+    { label: "Roca Sedimentaria Clasica", value: "sedimentary" },
+    { label: "Roca Sedimentaria Quimica y Biogenica", value: "sedimentaryChemistry" },
     { label: "Roca Ígnea", value: "igneous" },
     { label: "Roca Metamórfica", value: "metamorphic" },
+    { label: "Roca Piroclastica", value: "pyroclastic" },
     { label: "Libre", value: "free" },
   ];
 
@@ -86,7 +88,7 @@ const ReportForm = ({
         </Animated.View>
       ))}
       <Input
-        label="Texto libre"
+        label="Interpretación"
         placeholder="Escriba su texto aquí"
         value={text2}
         onChangeText={setText2}

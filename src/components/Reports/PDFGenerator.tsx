@@ -27,6 +27,15 @@ import * as ImageManipulator from "expo-image-manipulator";
  * @param {PDFGenerator} props - Las propiedades del componente.
  * @returns {JSX.Element} - El componente renderizado.
  */
+const items = [
+  { label: "Roca Sedimentaria Clasica", value: "sedimentary" },
+  { label: "Roca Sedimentaria Quimica y Biogenica", value: "sedimentaryChemistry" },
+  { label: "Roca Ígnea", value: "igneous" },
+  { label: "Roca Metamórfica", value: "metamorphic" },
+  { label: "Roca Piroclastica", value: "pyroclastic" },
+  { label: "Libre", value: "free" },
+];
+
 const PDFGenerator = ({
   type,
   title,
@@ -187,7 +196,7 @@ const PDFGenerator = ({
         </head>
         <body>
           <div class="header">
-            <h1>Reporte de ${type === "free" ? "Libre" : `Roca ${type}`}: ${title}</h1>
+            <h1>Reporte de ${type === "free" ? "Libre" : items.find(item => item.value === type)?.label || type}: ${title}</h1>
             <p>Fecha de generación: <span class="highlight">${formattedDate}</span></p>
           </div>
     `;

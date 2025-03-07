@@ -48,7 +48,7 @@ export interface NoteAttachmentEntity {
 export interface ReportEntity {
   id: number;
   terrainId: number; // Nueva columna para asociar el reporte a un terreno
-  type: 'sedimentary' | 'igneous' | 'metamorphic' | 'free';
+  type: 'sedimentary' | 'igneous' | 'metamorphic' | 'free' | 'sedimentaryChemistry' | 'pyroclastic';
   title: string;
   photoUri?: string;
   latitude?: number;

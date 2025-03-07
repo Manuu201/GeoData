@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, View, Alert, FlatList, Modal, ScrollView, TextInput, TouchableOpacity } from "react-native";
+import { StyleSheet, View, Alert, Modal, TextInput, TouchableOpacity, ScrollView } from "react-native";
 import { Layout, Text, Card, Button, Icon, TopNavigation, useTheme, TopNavigationAction } from "@ui-kitten/components";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
@@ -7,6 +7,7 @@ import { useSQLiteContext } from "expo-sqlite";
 import { fetchTerrainsAsync, addTerrainAsync, deleteTerrainAsync, updateTerrainAsync } from '../database/database';
 import { useNavigation } from "@react-navigation/native";
 import { useTerrain } from '../context/TerrainContext';
+import RNPickerSelect from 'react-native-picker-select';
 
 export default function HomeScreen({ navigation }) {
   const theme = useTheme();
@@ -35,11 +36,14 @@ export default function HomeScreen({ navigation }) {
       return;
     }
 
-    await addTerrainAsync(db, newTerrainName);
+    const newTerrainId = await addTerrainAsync(db, newTerrainName);
     const updatedTerrains = await fetchTerrainsAsync(db);
     setTerrains(updatedTerrains);
     setNewTerrainName("");
     setIsModalVisible(false);
+
+    // Seleccionar automáticamente el nuevo terreno creado
+    setTerrainId(newTerrainId);
   };
 
   // Editar un terreno existente
@@ -79,6 +83,26 @@ export default function HomeScreen({ navigation }) {
   const openDeleteModal = (id) => {
     setTerrainToDelete(id);
     setIsDeleteModalVisible(true);
+  };
+
+  // Función para manejar la navegación
+  const handleNavigation = (screen) => {
+    if (!terrainId) {
+      Alert.alert(
+        "⚠️ Selecciona un Terreno",
+        "Para continuar, primero debes seleccionar un terreno desde el selector en la parte superior.",
+        [
+          {
+            text: "OK",
+            onPress: () => console.log("OK Pressed"),
+            style: "default",
+          },
+        ],
+        { cancelable: false }
+      );
+      return;
+    }
+    navigation.navigate(screen);
   };
 
   // Lista de funcionalidades disponibles
@@ -127,85 +151,17 @@ export default function HomeScreen({ navigation }) {
     },
   ];
 
-  const renderFeatureCard = (feature, index) => (
-    <Animated.View
-      key={index}
-      entering={FadeInUp.delay(index * 200).duration(800)}
-      style={styles.featureCardContainer}
-    >
-      <Card
-        style={[styles.featureCard, { backgroundColor: feature.color }]}
-        onPress={() => navigation.navigate(feature.screen)}
-      >
-        <Icon name={feature.icon} fill={theme["color-basic-100"]} style={styles.featureIcon} />
-        <Text category="h6" style={styles.featureTitle}>
-          {feature.name}
-        </Text>
-        <Text category="s1" style={styles.featureDescription}>
-          {feature.description}
-        </Text>
-        <Button
-          appearance="filled"
-          onPress={() => navigation.navigate(feature.screen)}
-          style={styles.button}
-          size="small"
-          accessoryRight={(props) => <Icon {...props} name="arrow-forward-outline" />}
-        >
-          Ver más
-        </Button>
-      </Card>
-    </Animated.View>
-  );
-
-  const renderTerrainItem = ({ item }) => (
-    <View style={styles.terrainItem}>
-      <Button
-        appearance="ghost"
-        onPress={() => setTerrainId(item.id)}
-        style={styles.terrainButton}
-      >
-        {item.name}
-      </Button>
-      <Button
-        appearance="ghost"
-        accessoryLeft={(props) => <Icon {...props} name="edit-outline" />}
-        onPress={() => openModal(item.id, item.name)}
-      />
-      <Button
-        appearance="ghost"
-        accessoryLeft={(props) => <Icon {...props} name="trash-outline" />}
-        onPress={() => openDeleteModal(item.id)}
-      />
-    </View>
-  );
-
-  // Encabezado del FlatList
-  const renderHeader = () => (
-    <Animated.View entering={FadeInDown.duration(800)}>
-      <Text category="h1" style={styles.title}>
-        GeoApp
-      </Text>
-      <Text category="s1" style={styles.subtitle}>
-        Tu asistente geológico de campo
-      </Text>
-      <Text category="h6" style={styles.terrainTitle}>
-        Terreno Actual: {terrains.find(t => t.id === terrainId)?.name || "Ninguno"}
-      </Text>
-    </Animated.View>
-  );
-
-  // Pie del FlatList (tarjetas de funcionalidades)
-  const renderFooter = () => (
-    <Layout style={styles.featuresContainer}>
-      {features.map(renderFeatureCard)}
-    </Layout>
-  );
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme["background-basic-color-1"] }}>
       <TopNavigation
         title="GeoApp"
         alignment="center"
+        accessoryLeft={() => (
+          <TopNavigationAction
+            icon={(props) => <Icon {...props} name="settings-outline" />}
+            onPress={() => navigation.navigate("SettingsScreen")}
+          />
+        )}
         accessoryRight={() => (
           <View style={{ flexDirection: "row" }}>
             <TopNavigationAction
@@ -213,21 +169,73 @@ export default function HomeScreen({ navigation }) {
               onPress={() => openModal()}
             />
             <TopNavigationAction
-              icon={(props) => <Icon {...props} name="settings-outline" />}
-              onPress={() => navigation.navigate("SettingsScreen")}
+              icon={(props) => <Icon {...props} name="trash-2-outline" />}
+              onPress={() => terrainId && openDeleteModal(terrainId)}
+              disabled={!terrainId}
+            />
+            <TopNavigationAction
+              icon={(props) => <Icon {...props} name="edit-outline" />}
+              onPress={() => terrainId && openModal(terrainId, terrains.find(t => t.id === terrainId)?.name)}
+              disabled={!terrainId}
             />
           </View>
         )}
       />
       <Layout style={styles.container}>
-        <FlatList
-          data={terrains}
-          renderItem={renderTerrainItem}
-          keyExtractor={(item) => item.id.toString()}
-          ListHeaderComponent={renderHeader}
-          ListFooterComponent={renderFooter}
-          contentContainerStyle={styles.scrollView}
-        />
+        {/* Selector de terreno actual */}
+        <View style={styles.terrainSelector}>
+          <Text category="h6" style={styles.terrainTitle}>
+            Terreno Actual:
+          </Text>
+          <RNPickerSelect
+            onValueChange={(value) => setTerrainId(value)}
+            items={terrains.map((terrain) => ({
+              label: terrain.name,
+              value: terrain.id,
+            }))}
+            value={terrainId}
+            placeholder={{ label: "Selecciona un terreno", value: null }}
+            style={pickerSelectStyles}
+          />
+          {!terrainId && (
+            <Text category="s1" style={{ color: theme["color-danger-500"], marginTop: 8 }}>
+              ⚠️ Debes seleccionar un terreno para continuar.
+            </Text>
+          )}
+        </View>
+
+        {/* Tarjetas de funcionalidades */}
+        <ScrollView contentContainerStyle={styles.featuresContainer}>
+          {features.map((feature, index) => (
+            <Animated.View
+              key={index}
+              entering={FadeInUp.delay(index * 200).duration(800)}
+              style={styles.featureCardContainer}
+            >
+              <Card
+                style={[styles.featureCard, { backgroundColor: feature.color }]}
+                onPress={() => handleNavigation(feature.screen)}
+              >
+                <Icon name={feature.icon} fill={theme["color-basic-100"]} style={styles.featureIcon} />
+                <Text category="h6" style={styles.featureTitle}>
+                  {feature.name}
+                </Text>
+                <Text category="s1" style={styles.featureDescription}>
+                  {feature.description}
+                </Text>
+                <Button
+                  appearance="filled"
+                  onPress={() => handleNavigation(feature.screen)}
+                  style={styles.button}
+                  size="small"
+                  accessoryRight={(props) => <Icon {...props} name="arrow-forward-outline" />}
+                >
+                  Ver más
+                </Button>
+              </Card>
+            </Animated.View>
+          ))}
+        </ScrollView>
       </Layout>
 
       {/* Modal para crear/editar terreno */}
@@ -297,40 +305,19 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
+// Estilos y configuraciones de RNPickerSelect
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  scrollView: {
-    flexGrow: 1,
     padding: 16,
-  },
-  title: {
-    textAlign: "center",
-    marginVertical: 16,
-    fontWeight: "bold",
-  },
-  subtitle: {
-    textAlign: "center",
-    opacity: 0.8,
-    marginBottom: 24,
   },
   terrainSelector: {
     marginBottom: 24,
   },
   terrainTitle: {
     marginBottom: 8,
-  },
-  terrainList: {
-    maxHeight: 200, // Limitar la altura de la lista
-  },
-  terrainItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  terrainButton: {
-    flex: 1,
+    color: "#FF5722",
+    fontWeight: "bold",
   },
   featuresContainer: {
     flexDirection: "row",
@@ -410,5 +397,28 @@ const styles = StyleSheet.create({
   modalText: {
     marginBottom: 16,
     fontSize: 14,
+  },
+});
+
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    color: "#000",
+    paddingRight: 30,
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    color: "#000",
+    paddingRight: 30,
   },
 });

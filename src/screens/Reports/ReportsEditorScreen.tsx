@@ -19,13 +19,20 @@ type ReportsEditorScreenProps = NativeStackScreenProps<RootStackParamList, "Repo
 // Definir textos dinámicos para cada tipo de reporte
 const dynamicTexts = {
   sedimentary: [
+    "Codigo Muestra",
+    "Nombre Roca",
     "Granulometría",
+    "Matriz",
+    "Cemento",
+    "Grado de Selección",
     "Madurez Textural",
-    "Selección",
-    "Redondez y Esfericidad",
+    "Madurez Composicional",
     "Estructura Sedimentaria",
+    "Ambiente de Depósito",
   ],
   igneous: [
+    "Codigo Muestra",
+    "Nombre Roca (QAP)",
     "Textura",
     "Estructura",
     "Fábrica",
@@ -35,6 +42,8 @@ const dynamicTexts = {
     "Índice de Color",
   ],
   metamorphic: [
+    "Codigo Muestra",
+    "Nombre Roca",
     "Fábrica",
     "Estructura",
     "Textura",
@@ -43,6 +52,29 @@ const dynamicTexts = {
     "Tipo de Metamorfismo",
     "Zona o Facie",
     "Grado",
+  ],
+  sedimentaryChemistry: [
+    "Codigo Muestra",
+    "Nombre Roca",
+    "Textura",
+    "Estructura Sedimentaria",
+    "Fábrica",
+    "Composición Mineralogica",
+    "Color",
+    "Cemento",
+    "Reacción con HCl",
+    "Ambiente de Formación",
+  ],
+  pyroclastic: [
+    "Codigo Muestra",
+    "Nombre de Roca",
+    "Estructura",
+    "Textura Piroclastica",
+    "Tamaño Dominante",
+    "Grado de Soldura",
+    "Color",
+    "Fabrica",
+    "Porosidad",
   ],
   free: [],
 };
@@ -68,6 +100,20 @@ const predefinedTemplates = {
     ["", "", "", "", ""],
     ["", "", "", "", ""],
   ],
+  sedimentaryChemistry: [
+    ["", "Tipo", "Porcentaje"],
+    ["Minerales", "", ""],
+    ["Fósiles", "", ""],
+    ["Cemento", "", ""],
+    ["Matriz", "", ""],
+  ],
+  pyroclastic: [
+    ["Tipo Piroclastico", "Porcentaje", "Tamaño", "Forma", "Composicion", "Color"],
+    ["", "", "", "", "", ""],
+    ["", "", "", "", "", ""],
+    ["", "", "", "", "", ""],
+    ["", "", "", "", "", ""]
+  ],
   free: Array.from({ length: 5 }, () => Array(5).fill("")), // Inicialización corregida
 };
 
@@ -81,7 +127,7 @@ const predefinedTemplates = {
 const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, route }) => {
   const { report } = route.params || {};
   const [title, setTitle] = useState(report?.title || "");
-  const [type, setType] = useState<"sedimentary" | "igneous" | "metamorphic" | "free">(report?.type || "sedimentary");
+  const [type, setType] = useState<"sedimentary" | "igneous" | "metamorphic"  | 'free' | 'sedimentaryChemistry' | 'pyroclastic'>(report?.type || "sedimentary");
   const [dynamicTextsValues, setDynamicTextsValues] = useState<string[]>([]);
   const [tableData, setTableData] = useState<string[][]>(predefinedTemplates[report?.type || "sedimentary"]);
   const [photoUri, setPhotoUri] = useState(report?.photoUri || "");
@@ -187,11 +233,13 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
   const handleTypeChange = (index: IndexPath | IndexPath[]) => {
     const selectedIndex = Array.isArray(index) ? index[0] : index;
     setSelectedTypeIndex(selectedIndex);
-    const newType = ["sedimentary", "igneous", "metamorphic", "free"][selectedIndex.row] as
+    const newType = ["sedimentary", "igneous", "metamorphic", "free", "sedimentaryChemistry","pyroclastic"][selectedIndex.row] as
       | "sedimentary"
       | "igneous"
       | "metamorphic"
-      | "free";
+      | "free"
+      | "sedimentaryChemistry"
+      | "pyroclastic";
     setType(newType);
   };
 
@@ -207,7 +255,7 @@ const ReportsEditorScreen: React.FC<ReportsEditorScreenProps> = ({ navigation, r
     const now = new Date().toISOString();
     const newReport: Omit<ReportEntity, "id" | "createdAt" | "updatedAt"> = {
       terrainId, // Asociar el reporte al terreno seleccionado
-      type: type as "sedimentary" | "igneous" | "free",
+      type: type as 'sedimentary' | 'igneous' | 'metamorphic' | 'free' | 'sedimentaryChemistry' | 'pyroclastic',
       title,
       photoUri,
       latitude,

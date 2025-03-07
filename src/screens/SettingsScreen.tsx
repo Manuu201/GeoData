@@ -1,11 +1,9 @@
 import React from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import { Button, Text, Layout, Toggle } from '@ui-kitten/components';
+import { Button, Text, Layout } from '@ui-kitten/components';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useTheme } from '../hooks/useTheme'; // Importa el hook useTheme
 
 const SettingScreen = () => {
-  const { theme, toggleTheme, isDark } = useTheme(); // Usa el hook para obtener el tema y la función para cambiarlo
   const db = useSQLiteContext();
 
   const handleDeleteAllData = async () => {
@@ -19,12 +17,12 @@ const SettingScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await db.execAsync('DELETE FROM items;');
+              // Eliminar todos los datos de la base de datos
+              await db.execAsync('DELETE FROM terrains;');
               await db.execAsync('DELETE FROM notes;');
               await db.execAsync('DELETE FROM photos;');
               await db.execAsync('DELETE FROM tables;');
               await db.execAsync('DELETE FROM reports;');
-              await db.execAsync('DELETE FROM lithologies;');
               await db.execAsync('DELETE FROM columns;');
               await db.execAsync('DELETE FROM layers;');
               Alert.alert('Éxito', 'Todos los datos han sido borrados.');
@@ -42,11 +40,6 @@ const SettingScreen = () => {
       <Text category="h4" style={styles.title}>
         Configuración
       </Text>
-
-      <View style={styles.settingItem}>
-        <Text>Modo Oscuro</Text>
-        <Toggle checked={isDark} onChange={toggleTheme} />
-      </View>
 
       <View style={styles.settingItem}>
         <Text>Versión de la App: 1.0.0</Text>

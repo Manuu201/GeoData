@@ -1,15 +1,35 @@
-import React, { useState, useCallback, memo, useContext } from "react";
-import { FlatList, StyleSheet, Platform, KeyboardAvoidingView, View, Alert } from "react-native";
+import React, { useState, useCallback, memo } from "react";
+import {
+  FlatList,
+  StyleSheet,
+  Platform,
+  KeyboardAvoidingView,
+  View,
+  Alert,
+  Modal, // <-- Modal de React Native
+  TextInput, // <-- TextInput de React Native
+  Text, // <-- Text de React Native
+} from "react-native";
 import { useSQLiteContext } from "expo-sqlite";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { TableEntity, fetchTablesAsync, addTableAsync, deleteTableAsync } from "../../database/database";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Card, Text, Input, Button, Icon, Layout, useTheme, Modal, Spinner, TopNavigation, TopNavigationAction, Divider } from "@ui-kitten/components";
+import {
+  Card,
+  Button,
+  Icon,
+  Layout,
+  useTheme,
+  TopNavigation,
+  TopNavigationAction,
+  Divider,
+  Input,
+} from "@ui-kitten/components"; // <-- Ya no incluyas Modal aquí
 import type { RootStackParamList } from "../../navigation/types";
 import { Snackbar } from "react-native-paper";
-import { useTerrain } from "../../context/TerrainContext"; // Importar el contexto del terreno
-
+import { useTerrain } from "../../context/TerrainContext";
+import { LogBox } from "react-native";
 const ITEMS_PER_PAGE = 5;
 
 /**
@@ -44,6 +64,8 @@ const MemoizedTextInput = memo<MemoizedTextInputProps>(({ label, value, onChange
  * @returns {JSX.Element} - El componente de la pantalla de tablas.
  */
 export default function TableScreen() {
+  
+  LogBox.ignoreLogs(['Warning: MeasureElement: Support for defaultProps will be removed from function components in a future major release.']);
   const db = useSQLiteContext();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, "TableEditorScreen">>();
   const { terrainId } = useTerrain(); // Obtener el terreno seleccionado
@@ -316,8 +338,8 @@ export default function TableScreen() {
               style={styles(theme).tableCard}
               onPress={() => navigation.navigate("TableEditorScreen", { table: item, onSave: fetchTables })}
             >
-              <Text category="h6">{item.name}</Text>
-              <Text category="s1" appearance="hint">
+              <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{item.name}</Text>
+              <Text>
                 {item.rows} Filas | {item.columns} Columnas
               </Text>
               <View style={styles(theme).cardActions}>
@@ -338,56 +360,82 @@ export default function TableScreen() {
           <Button appearance="ghost" disabled={page >= totalPages - 1} onPress={() => setPage(page + 1)} accessoryLeft={<Icon name="chevron-right" />} />
         </View>
 
-        <Modal visible={isDialogVisible} onBackdropPress={() => setIsDialogVisible(false)}>
-          <Card>
-            <Text category="h6">Agregar Tabla</Text>
-            <View style={styles(theme).templateButtons}>
-              <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Sedimentaria")}>
-                Usar Plantilla: Roca Sedimentaria
-              </Button>
-              <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Ígnea")}>
-                Usar Plantilla: Roca Ígnea
-              </Button>
-              <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Piroclastica")}>
-                Usar Plantilla: Roca Piroclastica
-              </Button>
-              <Button appearance="outline" onPress={() => handleTemplateSelection("Roca Metamorfica")}>
-                Usar Plantilla: Roca Metamorfica
-              </Button>
+        <Modal
+          visible={isDialogVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setIsDialogVisible(false)}
+        >
+          <View style={styles(theme).modalOverlay}>
+            <View style={styles(theme).modalContent}>
+              <Text style={styles(theme).modalTitle}>Agregar Tabla</Text>
+              <View style={styles(theme).templateButtons}>
+                <Button
+                  appearance="outline"
+                  onPress={() => handleTemplateSelection("Roca Sedimentaria")}
+                >
+                  Usar Plantilla: Roca Sedimentaria
+                </Button>
+                <Button
+                  appearance="outline"
+                  onPress={() => handleTemplateSelection("Roca Ígnea")}
+                >
+                  Usar Plantilla: Roca Ígnea
+                </Button>
+                <Button
+                  appearance="outline"
+                  onPress={() => handleTemplateSelection("Roca Piroclastica")}
+                >
+                  Usar Plantilla: Roca Piroclastica
+                </Button>
+                <Button
+                  appearance="outline"
+                  onPress={() => handleTemplateSelection("Roca Metamorfica")}
+                >
+                  Usar Plantilla: Roca Metamorfica
+                </Button>
+              </View>
 
+              <TextInput
+                placeholder="Nombre"
+                value={newTableName}
+                onChangeText={setNewTableName}
+                style={styles(theme).input}
+              />
+              {errorMessage?.field === "name" && (
+                <Text style={styles(theme).errorText}>{errorMessage.message}</Text>
+              )}
+
+              <TextInput
+                placeholder="Filas"
+                value={newTableRows}
+                onChangeText={setNewTableRows}
+                keyboardType="numeric"
+                style={styles(theme).input}
+              />
+              {errorMessage?.field === "rows" && (
+                <Text style={styles(theme).errorText}>{errorMessage.message}</Text>
+              )}
+
+              <TextInput
+                placeholder="Columnas"
+                value={newTableColumns}
+                onChangeText={setNewTableColumns}
+                keyboardType="numeric"
+                style={styles(theme).input}
+              />
+              {errorMessage?.field === "columns" && (
+                <Text style={styles(theme).errorText}>{errorMessage.message}</Text>
+              )}
+
+              <View style={styles(theme).cardActions}>
+                <Button appearance="ghost" onPress={() => setIsDialogVisible(false)}>
+                  Cancelar
+                </Button>
+                <Button onPress={handleAddTable}>Agregar</Button>
+              </View>
             </View>
-
-            <MemoizedTextInput
-              label="Nombre"
-              value={newTableName}
-              onChangeText={setNewTableName}
-              error={errorMessage?.field === "name"}
-            />
-            {errorMessage?.field === "name" && <Text status="danger" style={styles(theme).errorText}>{errorMessage.message}</Text>}
-
-            <MemoizedTextInput
-              label="Filas"
-              value={newTableRows}
-              onChangeText={setNewTableRows}
-              keyboardType="numeric"
-              error={errorMessage?.field === "rows"}
-            />
-            {errorMessage?.field === "rows" && <Text status="danger" style={styles(theme).errorText}>{errorMessage.message}</Text>}
-
-            <MemoizedTextInput
-              label="Columnas"
-              value={newTableColumns}
-              onChangeText={setNewTableColumns}
-              keyboardType="numeric"
-              error={errorMessage?.field === "columns"}
-            />
-            {errorMessage?.field === "columns" && <Text status="danger" style={styles(theme).errorText}>{errorMessage.message}</Text>}
-
-            <View style={styles(theme).cardActions}>
-              <Button appearance="ghost" onPress={() => setIsDialogVisible(false)}>Cancelar</Button>
-              <Button onPress={handleAddTable}>Agregar</Button>
-            </View>
-          </Card>
+          </View>
         </Modal>
 
         <Snackbar
@@ -459,5 +507,22 @@ const styles = (theme) =>
       bottom: 80,
       left: 16,
       right: 16,
+    },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    modalContent: {
+      width: "80%",
+      padding: 20,
+      backgroundColor: theme["background-basic-color-2"],
+      borderRadius: 10,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: "bold",
+      marginBottom: 16,
     },
   });

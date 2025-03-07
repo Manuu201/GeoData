@@ -244,14 +244,14 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles(theme).safeArea}>
       <TopNavigation
-        title="Reportes"
+        title="Descripción"
         alignment="center"
         accessoryRight={() => (
           <TopNavigationAction
             icon={AddIcon}
             onPress={() => {
               if (!terrainId) {
-                Alert.alert("Error", "Debes seleccionar un terreno antes de crear un reporte.");
+                Alert.alert("Error", "Debes seleccionar un terreno antes de crear una descripcion.");
                 return;
               }
               navigation.navigate("ReportsEditorScreen");
@@ -262,7 +262,7 @@ const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigation }) => {
       <Divider />
       <Layout style={styles(theme).container} level="1">
         <Input
-          placeholder="Buscar reportes..."
+          placeholder="Buscar descripcion..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           accessoryLeft={(props) => <Icon {...props} name="search" />}
