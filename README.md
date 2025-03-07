@@ -26,24 +26,12 @@ Este proyecto es una aplicación móvil desarrollada con React Native y Expo, qu
 - **Node.js** (versión recomendada: >= 16)
 - **Expo CLI** instalado globalmente:
 
-### 3. **BASE_DE_DATOS.md** (Base de datos SQLite)
+
 
 # Base de Datos SQLite
 
 La base de datos se maneja en `database/database.ts`.  
-Se crean y gestionan las siguientes tablas:
 
-- `notes` → CRUD de notas.
-- `photos` → Almacena fotos con coordenadas.
-- `tables` → Permite gestionar tablas dinámicas.
-
-# Funcionalidades Principales
-
-- **Gestión de notas** en `NotesScreen.tsx`.
-- **Captura de fotos con ubicación** en `PhotosScreen.tsx`.
-- **Visualización de fotos en un mapa** con `react-native-maps`.
-- **Creación y edición de tablas dinámicas** en `TablesScreen.tsx` y `TableEditorScreen.tsx`.
-- **Persistencia de datos** con SQLite.
 
 # Dependencias Clave
 
@@ -71,7 +59,7 @@ La carpeta `/assets` contiene imágenes y otros recursos estáticos utilizados e
 # Lógica de la Base de Datos
 
 La lógica de la base de datos SQLite se encuentra en `/database/database.ts`.  
-Este archivo contiene las funciones para crear, leer, actualizar y eliminar datos en las tablas `notes`, `photos` y `tables`.
+
 
 ## Cómo ejecutar la aplicación
 
